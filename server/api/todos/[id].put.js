@@ -28,6 +28,11 @@ export default defineEventHandler(async (event) => {
     // Convert the ID to an integer
     const parsedId = parseInt(id);
 
+    // Check if the todo with the given ID exists
+    const todo = await prisma.todo.findUnique({
+      where: { id: parsedId },
+    });
+
     if (!todo) {
       return {
         statusCode: 404,
