@@ -2,21 +2,11 @@ import { PrismaClient } from "@prisma/client";
 import { serverSupabaseUser } from '#supabase/server'
 
 // Singleton pattern to prevent re-instantiating PrismaClient
-let prisma;
-
-if (process.env.NODE_ENV === "production") {
-  // In production, create a single instance of PrismaClient
-  prisma = new PrismaClient();
-} else {
-  // In non-production environments, use global object to store PrismaClient instance
-  if (!global.prisma) {
-    global.prisma = new PrismaClient();
-  }
-  prisma = global.prisma;
-}
+let prisma = new PrismaClient();
 
 export default defineEventHandler(async (event) => {
-  let user = serverSupabaseUser(event)
+  let user = await serverSupabaseUser(event)
+  console.log('user', user);
   if (!user) {
     return {
       status: 401,

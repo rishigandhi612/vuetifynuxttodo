@@ -1,56 +1,57 @@
 <template>
-  <div class="confirm-container">
-    <h1 class="confirm-title">Confirm User...</h1>
-    <p class="confirm-description">
-      Lorem ipsum, dolor sit amet consectetur adipisicing elit. Et, aut autem
-      tenetur repellendus dolor, commodi officiis ipsa inventore provident
-      adipisci atque error velit obcaecati! Veritatis ducimus vero doloremque
-      blanditiis quis.
-    </p>
-
-    {{ user }}
-  </div>
+  <v-container class="mt-5">
+    <v-row justify="center">
+      <v-col md="5">
+        <h1>Confirming...</h1>
+        <p>
+          Lorem ipsum dolor sit, amet consectetur adipisicing elit. Dolores
+          neque tenetur ab enim, ipsa et cumque nihil temporibus, commodi
+          assumenda reprehenderit quae at consequuntur sit ut accusamus! Modi,
+          exercitationem quis?
+        </p>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script setup>
-const user = useSupabaseUser();
 const supabase = useSupabaseClient();
+const user = useSupabaseUser();
+
+// Handle the OAuth callback
+const handleAuthCallback = async () => {
+  try {
+    const { error } = await supabase.auth.getSession()
+    if (error) {
+      throw error
+    }
+    
+    // Redirect after successful authentication
+    await navigateTo('/')
+  } catch (e) {
+    console.error('Error getting auth session:', e)
+    // Redirect to login on error
+    await navigateTo('/login')
+  }
+}
 
 watch(
   user,
-  async () => {
+  () => {
     if (user.value) {
-      navigateTo('/');
-    } else {
-      navigateTo('/login');
+      // Redirect to protected page
+      navigateTo("/");
     }
   },
   { immediate: true }
 );
+
+
+// Call handleAuthCallback on page load
+onMounted(() => {
+  handleAuthCallback()
+})
 </script>
 
-<style scoped>
-.confirm-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: #f8f9fa;
-  padding: 2rem;
-  text-align: center;
-}
-
-.confirm-title {
-  font-size: 2rem;
-  margin-bottom: 1rem;
-  color: #333;
-}
-
-.confirm-description {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #555;
-  max-width: 600px;
-}
+<style>
 </style>
