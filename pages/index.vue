@@ -3,7 +3,7 @@
     <!-- Header -->
     <v-row class="header" align="center">
       <!-- Centered Title -->
-      <v-col cols="10" class="d-flex justify-center">
+      <v-col cols="12" md="10" class="d-flex justify-center">
         <p>
           <span class="text-primary">
             Hello <strong>{{ user.email }}</strong>
@@ -13,8 +13,8 @@
       </v-col>
 
       <!-- Right-aligned Logout Button -->
-      <v-col cols="2" class="d-flex justify-end">
-        <v-btn :loading="loadingLogout" color="error" @click="logout" outlined>
+      <v-col cols="12" md="2" class="d-flex justify-end">
+        <v-btn :loading="loadingLogout" color="error" @click="logout" outlined >
           Logout
         </v-btn>
       </v-col>
@@ -46,22 +46,22 @@
 
     <!-- Todo Summary -->
     <v-row>
-      <v-col cols="8">
-        <h2 class="text-h4 text-success ps-4">
+      <v-col cols="12" md="6" class="d-flex justify-start">
+        <h1 class="text-success">
           <span>Total Tasks:</span>
           <v-fade-transition leave-absolute>
             <span :key="`tasks-${data?.data?.length}`">
               {{ data?.data?.length || 0 }}
             </span>
           </v-fade-transition>
-        </h2>
+        </h1>
       </v-col>
 
-      <v-col cols="4" class="d-flex justify-center align-center">
-        <v-row>
-          <v-col cols="6">
+      <v-col cols="6" class="d-flex justify-center">
+        <v-row class="d-flex align-center">
+          <v-col cols="8" class="d-flex justify-center">
             <div>
-              <h4>
+              <h4 >
                 <span
                   >Completed: <strong>{{ completedTodos }}</strong></span
                 >
@@ -73,7 +73,7 @@
               </h4>
             </div>
           </v-col>
-          <v-col cols="6">
+          <v-col cols="4">
             <v-progress-circular
               v-model="completedPercentage"
               color="success"
@@ -130,7 +130,7 @@
           </v-col>
 
           <!-- Task Title -->
-          <v-col cols="4" md="4" sm="4">
+          <v-col cols="8" md="4" sm="4">
             <v-list-item-title
               :class="{
                 'text-decoration-line-through': todo.status,
@@ -141,7 +141,7 @@
             </v-list-item-title>
           </v-col>
           
-          <v-col cols="4" md="4" sm="4">
+          <v-col cols="6" md="4" sm="4"   class="d-none d-sm-flex">
             <v-list-item-title
               :class="{
                 'text-decoration-line-through': todo.status,
@@ -163,12 +163,13 @@
               />
             </template>
             <template v-else>
-              <v-btn
+              <v-btn icon="mdi-delete"
                 color="error"
                 @click="openDeleteDialog(todo)"
-                outlined
+                variant="outlined"
+                size="small"
               >
-                Delete
+                
               </v-btn>
             </template>
           </v-col>
@@ -292,32 +293,7 @@ const sortedTodos = computed(() => {
 });
 
 // Function to delete a todo directly
-// const deleteTodo = async (id) => {
-//   loadingDeleteTodo.value[id] = true;
-//   try {
-//     const response = await fetch(`/api/todos/${id}`, {
-//       method: "DELETE",
-//     });
 
-//     if (!response.ok) {
-//       throw new Error("Failed to delete the todo. Please try again.");
-//     }
-
-//     // Refetch todos after successful deletion
-//     refresh();
-//     snackbar.value = {
-//       visible: true,
-//       message: "Todo deleted successfully!",
-//       color: "success",
-//     };
-//   } catch (err) {
-//     alert(
-//       err.message || "An unexpected error occurred while deleting the todo."
-//     );
-//   } finally {
-//     loadingDeleteTodo.value[id] = false;
-//   }
-// };
 // Function to open the delete confirmation dialog
 const openDeleteDialog = (todo) => {
   todoToDelete.value = todo; // Store the todo to delete
