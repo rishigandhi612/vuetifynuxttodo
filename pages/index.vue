@@ -14,11 +14,10 @@
 
       <!-- Right-aligned Logout Button -->
       <v-col cols="2" class="d-flex justify-end">
-        <v-btn color="error" @click="logout" outlined>Logout</v-btn>
+        <v-btn :loading="loadingLogout" color="error" @click="logout" outlined>
+          Logout
+        </v-btn>
       </v-col>
-    </v-row>
-    <v-row>
-      <v-col> </v-col>
     </v-row>
 
     <!-- Form to add a new todo -->
@@ -36,6 +35,7 @@
                 v-show="newTodo"
                 icon="mdi-plus-circle"
                 variant="text"
+                :loading="loadingAddTodo"
                 @click="addTodo"
               ></v-btn>
             </v-fade-transition>
@@ -90,7 +90,9 @@
     <!-- Todo List -->
 
     <!-- Loading State -->
-    <v-alert v-if="loader" type="info" text outlined><v-progress-circular interdiminate></v-progress-circular> Loading... </v-alert>
+    <v-alert v-if="loader" type="info" text outlined>
+      <v-progress-circular indeterminate></v-progress-circular> Loading...
+    </v-alert>
 
     <!-- Error State -->
     <v-alert v-if="error" type="error" text outlined>
@@ -98,9 +100,11 @@
     </v-alert>
 
     <!-- Todo Items -->
-    <v-container v-if="data?.data?.length">
+  
+    <!-- Todo Items -->
+    <v-container v-if="sortedTodos?.length">
       <v-list-item
-        v-for="todo in data?.data"
+        v-for="todo in sortedTodos"
         :key="todo.id"
         class="todo-item"
         rounded
@@ -108,15 +112,25 @@
         <v-row align="center">
           <!-- Checkbox -->
           <v-col cols="2" md="2" sm="2">
-            <v-checkbox
-              v-model="todo.status"
-              @click="toggleStatus(todo)"
-              hide-details
-            ></v-checkbox>
+            <template v-if="loadingToggleStatus[todo.id]">
+              <v-progress-circular
+                :size="24"
+                :width="4"
+                color="primary"
+                indeterminate
+              ></v-progress-circular>
+            </template>
+            <template v-else>
+              <v-checkbox
+                v-model="todo.status"
+                @click="toggleStatus(todo)"
+                hide-details
+              ></v-checkbox>
+            </template>
           </v-col>
 
           <!-- Task Title -->
-          <v-col cols="8" md="8" sm="8">
+          <v-col cols="4" md="4" sm="4">
             <v-list-item-title
               :class="{
                 'text-decoration-line-through': todo.status,
@@ -126,47 +140,92 @@
               {{ todo.title }}
             </v-list-item-title>
           </v-col>
+          
+          <v-col cols="4" md="4" sm="4">
+            <v-list-item-title
+              :class="{
+                'text-decoration-line-through': todo.status,
+                'text-body': !todo.status,
+              }"
+            >
+              {{ formatDate(todo.createdAt) }}
+            </v-list-item-title>
+          </v-col>
 
-          <!-- Delete Button -->
+          <!-- Delete Button with confirmation -->
           <v-col cols="2" md="2" sm="2">
-            <v-icon color="error" @click="confirmDelete(todo.id)">
-              mdi-delete
-            </v-icon>
+            <template v-if="loadingDeleteTodo[todo.id]">
+              <v-progress-circular
+                :size="24"
+                :width="4"
+                color="error"
+                indeterminate
+              />
+            </template>
+            <template v-else>
+              <v-btn
+                color="error"
+                @click="openDeleteDialog(todo)"
+                outlined
+              >
+                Delete
+              </v-btn>
+            </template>
           </v-col>
         </v-row>
       </v-list-item>
     </v-container>
-
     <!-- Empty State -->
     <v-alert v-else type="info" text outlined>
       No todos yet! Add your first task.
     </v-alert>
 
-    <!-- Delete Confirmation Dialog -->
-    <v-dialog v-model="deleteDialog" max-width="400px">
+    <!-- Confirmation Dialog -->
+    <v-dialog v-model="deleteDialogVisible" max-width="400px">
       <v-card>
-        <v-card-title class="headline">Confirm Delete</v-card-title>
-        <v-card-text>Are you sure you want to delete this task?</v-card-text>
+        <v-card-title class="headline">Are you sure you want to delete this task?</v-card-title>
         <v-card-actions>
-          <v-btn color="grey" text @click="cancelDelete">Cancel</v-btn>
-          <v-btn color="red" text @click="deleteTodoConfirm">Delete</v-btn>
+          <v-btn color="red" @click="deleteDialogVisible = false">Cancel</v-btn>
+          <v-btn color="green" :loading="deleteLoading" @click="confirmDelete">Confirm</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+
+
+
+    <!-- Snackbar -->
+    <v-snackbar v-model="snackbar.visible" timeout="1000">
+      {{ snackbar.message }}
+      <template v-slot:actions>
+        <v-btn color="pink" variant="text" @click="snackbar.visible = false">
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
   </v-container>
 </template>
 
 <script setup>
-import { ref, watchEffect } from "vue";
+import { ref, watchEffect, computed } from "vue";
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
+
 // Reactive state variables
 const newTodo = ref("");
 let loader = ref(false);
-
-// For managing the delete dialog visibility and selected todo ID
-const deleteDialog = ref(false);
-const todoToDelete = ref(null);
+let loadingAddTodo = ref(false);
+let loadingDeleteTodo = ref({}); // Initialize as an object to track each todo
+let loadingToggleStatus = ref({});
+const snackbar = ref({
+  visible: false,
+  message: "",
+  color: "success", // 'success' or 'error'
+});
+let loadingLogout = ref(false);
+const deleteDialogVisible = ref(false);
+const deleteLoading = ref(false);
+let todoToDelete = ref(null); // Store the todo to delete
 
 // Fetch todos with error handling
 let { data, error, refresh } = await useFetch("/api/todos");
@@ -184,9 +243,10 @@ watchEffect(() => {
 
 // Function to add a new todo
 const addTodo = async () => {
-  loader.value = true;
+  loadingAddTodo.value = true;
   if (!newTodo.value.trim()) {
     alert("Please enter a todo title!");
+    loadingAddTodo.value = false;
     return;
   }
   try {
@@ -202,53 +262,103 @@ const addTodo = async () => {
 
     newTodo.value = ""; // Reset input
     refresh(); // Refetch todos
+    snackbar.value = {
+      visible: true,
+      message: "Todo added successfully!",
+      color: "success",
+    };
   } catch (err) {
     alert(err.message || "An unexpected error occurred while adding the todo.");
   } finally {
-    loader.value = false;
+    loadingAddTodo.value = false;
   }
 };
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0"); // Month is 0-indexed
+  const year = date.getFullYear().toString().slice(2); // Get last 2 digits of the year
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
 
-// Function to confirm the deletion of a todo
-const confirmDelete = (id) => {
-  todoToDelete.value = id;
-  deleteDialog.value = true; // Open the delete confirmation dialog
+  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
+// Sort todos by 'createdAt' in ascending order (earliest first) and then reverse it
+const sortedTodos = computed(() => {
+  return (data?.value?.data || [])
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) // Sort by 'createdAt' ascending
+    .reverse(); // Reverse the sorted array to get the latest at the top
+});
 
-// Function to delete a todo
-const deleteTodoConfirm = async () => {
-  loader.value = true;
+// Function to delete a todo directly
+// const deleteTodo = async (id) => {
+//   loadingDeleteTodo.value[id] = true;
+//   try {
+//     const response = await fetch(`/api/todos/${id}`, {
+//       method: "DELETE",
+//     });
+
+//     if (!response.ok) {
+//       throw new Error("Failed to delete the todo. Please try again.");
+//     }
+
+//     // Refetch todos after successful deletion
+//     refresh();
+//     snackbar.value = {
+//       visible: true,
+//       message: "Todo deleted successfully!",
+//       color: "success",
+//     };
+//   } catch (err) {
+//     alert(
+//       err.message || "An unexpected error occurred while deleting the todo."
+//     );
+//   } finally {
+//     loadingDeleteTodo.value[id] = false;
+//   }
+// };
+// Function to open the delete confirmation dialog
+const openDeleteDialog = (todo) => {
+  todoToDelete.value = todo; // Store the todo to delete
+  deleteDialogVisible.value = true; // Show the dialog
+};
+// Function to confirm delete
+const confirmDelete = async () => {
   if (!todoToDelete.value) return;
 
+  deleteLoading.value = true; // Set loading state for delete button
+
   try {
-    const response = await fetch(`/api/todos/${todoToDelete.value}`, {
+    const response = await fetch(`/api/todos/${todoToDelete.value.id}`, {
       method: "DELETE",
     });
+
     if (!response.ok) {
       throw new Error("Failed to delete the todo. Please try again.");
     }
 
+    // Refetch todos after successful deletion
     refresh();
-    deleteDialog.value = false; // Close the dialog after deletion
-    todoToDelete.value = null; // Clear the selected todo ID
+    snackbar.value = {
+      visible: true,
+      message: "Todo deleted successfully!",
+      color: "success",
+    };
   } catch (err) {
     alert(
       err.message || "An unexpected error occurred while deleting the todo."
     );
   } finally {
-    loader.value = false;
+    deleteDialogVisible.value = false; // Close the dialog
+    deleteLoading.value = false; // Reset the loading state
   }
 };
-
-// Function to cancel the delete action
-const cancelDelete = () => {
-  deleteDialog.value = false;
-  todoToDelete.value = null;
-};
-
 // Function to toggle todo status
 const toggleStatus = async (todo) => {
-  loader.value = true;
+  // Set loading state to true for the specific todo
+  loadingToggleStatus.value[todo.id] = true;
+
   const updatedStatus = !todo.status;
 
   try {
@@ -262,13 +372,20 @@ const toggleStatus = async (todo) => {
       throw new Error("Failed to update the status. Please try again.");
     }
 
+    // Refetch todos after updating the status
     refresh();
+    snackbar.value = {
+      visible: true,
+      message: "Todo status updated successfully!",
+      color: "success",
+    };
   } catch (err) {
     alert(
       err.message || "An unexpected error occurred while updating the status."
     );
   } finally {
-    loader.value = false;
+    // Set loading state back to false after the operation is completed
+    loadingToggleStatus.value[todo.id] = false;
   }
 };
 
@@ -279,10 +396,9 @@ const completedPercentage = computed(() =>
     ? Math.round((completedTodos.value / totalTasks.value) * 100)
     : 0
 );
-
 // Logout function
 const logout = async () => {
-  loader.value = true;
+  loadingLogout.value = true;
   try {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -297,38 +413,7 @@ const logout = async () => {
     console.error("Unexpected error during sign out:", err.message);
     alert("An unexpected error occurred during the sign out process.");
   } finally {
-    loader.value = false;
+    loadingLogout.value = false;
   }
 };
 </script>
-
-<style scoped>
-.todo-app {
-  background: #f4f6f9;
-  color: #333;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.header {
-  margin-bottom: 20px;
-}
-
-.todo-form {
-  margin-bottom: 20px;
-}
-
-.todo-item {
-  margin-bottom: 10px;
-  padding: 10px;
-  background: white;
-  border-radius: 5px;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
-}
-
-.text-decoration-line-through {
-  text-decoration: line-through;
-  color: #999;
-}
-</style>
