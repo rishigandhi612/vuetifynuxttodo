@@ -13,7 +13,7 @@ export default defineNuxtConfig({
     compatibilityVersion: 4
   },
   routeRules: {
-    '/api': { cors: true },
+    '/api/**': { cors: true },
   },
   modules: [(_options, nuxt) => {
     nuxt.hooks.hook('vite:extendConfig', (config) => {
