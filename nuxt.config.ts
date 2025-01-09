@@ -5,7 +5,7 @@ import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
-  // ssr:false,
+  ssr:false,
    build: {
     transpile: ['vuetify'],
   },
@@ -13,7 +13,7 @@ export default defineNuxtConfig({
     compatibilityVersion: 4
   },
   routeRules: {
-    '/api/**': { cors: true },
+    '/api/**': { cors: false },
   },
   modules: [(_options, nuxt) => {
     nuxt.hooks.hook('vite:extendConfig', (config) => {

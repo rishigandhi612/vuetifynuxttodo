@@ -9,13 +9,17 @@ export default defineEventHandler(async (event) => {
   console.log('user', user);
   if (!user) {
     return {
-      status: 401,
+      // status: 401,
       message: "Unauthorized",
     };
   }
   try {
     // Fetch all todos from the database
-    const todos = await prisma.todo.findMany();
+    const todos = await prisma.todo.findMany({
+      where: {
+        uid: user.id
+      }
+    });
 
     // Return the todos with a success status
     return {
