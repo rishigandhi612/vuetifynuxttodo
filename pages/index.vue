@@ -4,7 +4,7 @@
     <v-row class="header" align="center">
   <!-- Centered Title -->
   <v-col cols="10" class="d-flex justify-center">
-    <h1 class="text-h3 text-primary">Todo App</h1>
+   <p> <span class="text-primary"> Hello <strong>{{ user.email }}</strong> <h1>Welcome to Todo App! </h1> </span> </p>
   </v-col>
 
   <!-- Right-aligned Logout Button -->
@@ -12,10 +12,15 @@
     <v-btn color="error" @click="logout" outlined>Logout</v-btn>
   </v-col>
 </v-row>
+<v-row>
+  <v-col>
+    
+  </v-col>
+</v-row>
 
 
     <!-- Form to add a new todo -->
-    <v-form @submit.prevent="addTodo" class="todo-form">
+    <v-form @submit.prevent="addTodo" class="todo-form mt-4">
       <v-row>
         <v-text-field
           v-model="newTodo"
@@ -152,7 +157,7 @@
 <script setup>
 import { ref, watchEffect } from "vue";
 const supabase = useSupabaseClient();
-
+const user = useSupabaseUser();
 // Reactive state variables
 const newTodo = ref("");
 

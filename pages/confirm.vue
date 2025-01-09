@@ -7,6 +7,8 @@
       adipisci atque error velit obcaecati! Veritatis ducimus vero doloremque
       blanditiis quis.
     </p>
+
+    {{ user }}
   </div>
 </template>
 
