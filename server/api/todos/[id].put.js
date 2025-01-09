@@ -18,10 +18,10 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
 
     // Validate if the body contains the necessary fields for update
-    if (!body || !body.title || typeof body.status === 'undefined') {
+    if (!body || typeof body.status === 'undefined') {
       return {
         statusCode: 400,
-        message: "Invalid body. The request must contain 'title' and 'status' fields.",
+        message: "Invalid body. The request must contain  and  fields.",
       };
     }
 
