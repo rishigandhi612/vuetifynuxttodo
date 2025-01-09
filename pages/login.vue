@@ -1,154 +1,133 @@
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <h2 class="login-title">Login</h2>
-      <form @submit.prevent="handleLogin" class="login-form">
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input id="email" type="email" v-model="email" required placeholder="Enter your email" />
-        </div>
+  <v-container class="login-container" fluid style="height: 100vh;">
+    <v-row justify="center" align="center" class="fill-height">
+      <v-col cols="12" md="6" lg="4">
+        <v-card class="login-card" elevation="4">
+          <v-card-title class="login-title">
+            <span>Login</span>
+          </v-card-title>
 
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input id="password" type="password" v-model="password" required placeholder="Enter your password" />
-        </div>
+          <v-form @submit.prevent="handleLogin" v-model="formValid">
+            <v-text-field
+              id="email"
+              type="email"
+              v-model="email"
+              required
+              label="Enter your email"
+              :rules="[emailRules]"
+              class="mb-4"
+            />
 
-        <button type="submit" class="login-button" :disabled="loading">
-          {{ loading ? 'Logging in...' : 'Login' }}
-        </button>
+            <v-text-field
+              id="password"
+              type="password"
+              v-model="password"
+              required
+              label="Enter your password"
+              :rules="[passwordRules]"
+              class="mb-4"
+            />
 
-        <p v-if="error" class="error-message">{{ error }}</p>
-      </form>
+            <v-btn
+              :disabled="loading || !formValid"
+              type="submit"
+              color="primary"
+              block
+            >
+              {{ loading ? 'Logging in...' : 'Login' }}
+            </v-btn>
 
-      <p class="signup-text">
-        Don't have an account? <NuxtLink to="/signup" class="signup-link">Sign Up</NuxtLink>
-      </p>
-    </div>
-  </div>
+            <!-- Error Alert -->
+            <v-alert v-if="error" type="error" dismissible class="mt-4">
+              {{ error }}
+            </v-alert>
+          </v-form>
+
+          <v-card-actions>
+            <p class="signup-text">
+              Don't have an account? <NuxtLink to="/signup" class="signup-link">Sign Up</NuxtLink>
+            </p>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Snackbar for success -->
+    <v-snackbar v-model="snackbarVisible" color="green" top>
+      Login successful! Redirecting...
+    </v-snackbar>
+  </v-container>
 </template>
 
 <script setup>
-const email = ref("rishigandhi021@gmail.com")
-const password = ref("Rishi@123")
-const error = ref(null)
-const loading = ref(false)
+import { ref, onMounted } from 'vue';
 
-const supabase = useSupabaseClient()
+const email = ref("rishigandhi021@gmail.com");
+const password = ref("Rishi@123");
+const error = ref(null);
+const loading = ref(false);
+const snackbarVisible = ref(false);
+const formValid = ref(false);
+
+const supabase = useSupabaseClient();
+
+// Validation rules for Vuetify text fields
+const emailRules = [(v) => !!v || 'Email is required'];
+const passwordRules = [(v) => !!v || 'Password is required'];
 
 const handleLogin = async () => {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
 
   try {
     const { data, error: loginError } = await supabase.auth.signInWithPassword({
       email: email.value,
-      password: password.value
-    })
+      password: password.value,
+    });
 
-    if (loginError) throw loginError
+    if (loginError) throw loginError;
+
+    // Show snackbar on success
+    snackbarVisible.value = true;
 
     // Redirect to Confirm Page to check user info
-    navigateTo('/confirm')
-  } catch (error) {
-    error.value = error.message
+    navigateTo('/confirm');
+  } catch (err) {
+    // Handle specific error code and message from backend
+    if (err.code === 'invalid_credentials') {
+      error.value = 'Invalid login credentials';
+    } else {
+      error.value = err.message;
+    }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Redirect if already logged in
 onMounted(() => {
   //..
-})
+});
 </script>
 
 <style scoped>
 .login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
   background-color: #f7f9fc;
-  margin: 0;
-  padding: 0;
 }
 
 .login-card {
-  background: #fff;
   padding: 2rem;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
-  width: 100%;
 }
 
 .login-title {
   font-size: 1.8rem;
-  margin-bottom: 1.5rem;
   text-align: center;
   color: #333;
 }
 
-.login-form {
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #555;
-}
-
-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: border-color 0.3s ease;
-}
-
-input:focus {
-  border-color: #007bff;
-  outline: none;
-}
-
-.login-button {
-  background: #007bff;
-  color: #fff;
-  border: none;
-  padding: 0.75rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.login-button:disabled {
-  background: #cccccc;
-  cursor: not-allowed;
-}
-
-.login-button:hover:enabled {
-  background: #0056b3;
-}
-
-.error-message {
-  color: #ff4d4d;
-  margin-top: 1rem;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
 .signup-text {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   text-align: center;
   font-size: 0.9rem;
   color: #555;
@@ -163,5 +142,9 @@ input:focus {
 
 .signup-link:hover {
   color: #0056b3;
+}
+
+.v-alert {
+  margin-top: 1rem;
 }
 </style>

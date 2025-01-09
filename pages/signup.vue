@@ -1,154 +1,188 @@
 <template>
-    <div class="signup-container">
-      <h1 class="signup-title">Sign Up</h1>
-      <form @submit.prevent="handleSignup" class="signup-form">
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input id="email" type="email" v-model="email" required placeholder="Enter your email" />
-        </div>
-  
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input id="password" type="password" v-model="password" required placeholder="Enter your password" />
-        </div>
-  
-        <button type="submit" class="signup-button" :disabled="loading">
-          {{ loading ? 'Signing up...' : 'Sign Up' }}
-        </button>
-  
-        <p v-if="error" class="error-message">{{ error }}</p>
-      </form>
-  
-      <p class="login-text">
-        Already have an account? <NuxtLink to="/login" class="login-link">Login</NuxtLink>
-      </p>
-    </div>
-  </template>
-  
-  <script setup>
-  const email = ref("");
-  const password = ref("");
-  const error = ref(null);
-  const loading = ref(false);
-  
-  const supabase = useSupabaseClient();
-  
-  const handleSignup = async () => {
-    loading.value = true;
-    error.value = null;
-  
-    try {
-      const { data, error: signupError } = await supabase.auth.signUp({
-        email: email.value,
-        password: password.value
-      });
-  
-      if (signupError) throw signupError;
-  
-      // Redirect to confirmation or another page after signup
-      navigateTo('/confirm');
-    } catch (error) {
-      error.value = error.message;
-    } finally {
-      loading.value = false;
+  <v-container class="signup-container" fluid style="height: 100vh;">
+    <v-row justify="center" align="center" class="fill-height">
+      <v-col cols="12" md="6" lg="4">
+        <v-card class="signup-card" elevation="4">
+          <v-card-title class="signup-title">
+            <span>Sign Up</span>
+          </v-card-title>
+
+          <v-form @submit.prevent="handleSignup" v-model="formValid">
+            <v-text-field
+              id="email"
+              type="email"
+              v-model="email"
+              required
+              label="Enter your email"
+              :rules="[emailRules]"
+              class="mb-4"
+            />
+
+            <v-text-field
+              id="password"
+              type="password"
+              v-model="password"
+              required
+              label="Enter your password"
+              :rules="[passwordRules]"
+              class="mb-4"
+            />
+
+            <v-btn
+              :disabled="loading || !formValid"
+              type="submit"
+              color="primary"
+              block
+            >
+              {{ loading ? 'Signing up...' : 'Sign Up' }}
+            </v-btn>
+
+            <!-- Error Alert -->
+            <v-alert v-if="error" type="error" dismissible class="mt-4">
+              {{ error }}
+            </v-alert>
+          </v-form>
+
+          <v-card-actions>
+            <p class="login-text">
+              Already have an account? <NuxtLink to="/login" class="login-link">Login</NuxtLink>
+            </p>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Snackbar for success or error messages -->
+    <v-snackbar v-model="snackbarVisible" :color="snackbarColor" top>
+      {{ snackbarMessage }}
+      <template #action>
+        <v-btn color="pink" text @click="snackbarVisible = false">Close</v-btn>
+      </template>
+    </v-snackbar>
+
+    <!-- Dialog for email verification -->
+    <v-dialog v-model="dialogVisible" max-width="500">
+      <v-card>
+        <v-card-title>Confirm Your Email</v-card-title>
+        <v-card-text>
+          Please check your email inbox and confirm your account. If you haven’t received the email, please check the entered email.
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="primary" text @click="dialogVisible = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-container>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+
+const email = ref("");
+const password = ref("");
+const error = ref(null);
+const loading = ref(false);
+const formValid = ref(false);
+const snackbarVisible = ref(false);
+const snackbarMessage = ref("");
+const snackbarColor = ref("success");
+const dialogVisible = ref(false);
+
+const supabase = useSupabaseClient();
+
+// Validation rules for Vuetify text fields
+const emailRules = [(v) => !!v || 'Email is required'];
+const passwordRules = [(v) => !!v || 'Password is required'];
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const handleSignup = async () => {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const { data, error: signupError } = await supabase.auth.signUp({
+      email: email.value,
+      password: password.value
+    });
+
+    if (signupError) throw signupError;
+
+    // Check user metadata for email verification
+    const user = data.user;
+    if (user && user.user_metadata) {
+      if (user.user_metadata.email_verified === false) {
+        // Email not verified: show dialog
+        dialogVisible.value = true;
+      } else {
+        // Email verified: user already exists
+        snackbarMessage.value = "User already exists. Kindly sign in.";
+        snackbarColor.value = "warning";
+        snackbarVisible.value = true;
+        await delay(2000);
+        navigateTo('/login'); // Redirect to login
+      }
     }
-  };
-  </script>
-  
-  <style scoped>
-  .signup-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: #f8f9fa;
-    padding: 2rem;
-    text-align: center;
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    loading.value = false;
   }
-  
-  .signup-title {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    color: #333;
+};
+
+// Redirect if already logged in
+onMounted(async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    // Check user metadata
+    if (user.user_metadata && user.user_metadata.email_verified === false) {
+      // Email not verified: show dialog
+      dialogVisible.value = true;
+    } else {
+      // User already exists
+      snackbarMessage.value = "User already exists. Kindly sign in.";
+      snackbarColor.value = "warning";
+      snackbarVisible.value = true;
+      navigateTo('/login');
+    }
   }
-  
-  .signup-form {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 400px;
-  }
-  
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #555;
-  }
-  
-  input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
-  }
-  
-  input:focus {
-    border-color: #007bff;
-    outline: none;
-  }
-  
-  .signup-button {
-    background: #007bff;
-    color: #fff;
-    border: none;
-    padding: 0.75rem;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .signup-button:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
-  }
-  
-  .signup-button:hover:enabled {
-    background: #0056b3;
-  }
-  
-  .error-message {
-    color: #ff4d4d;
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    text-align: center;
-  }
-  
-  .login-text {
-    margin-top: 1.5rem;
-    text-align: center;
-    font-size: 0.9rem;
-    color: #555;
-  }
-  
-  .login-link {
-    color: #007bff;
-    text-decoration: none;
-    font-weight: bold;
-    transition: color 0.3s ease;
-  }
-  
-  .login-link:hover {
-    color: #0056b3;
-  }
-  </style>
-  
+});
+</script>
+
+<style scoped>
+.signup-container {
+  background-color: #f8f9fa;
+}
+
+.signup-card {
+  padding: 2rem;
+  border-radius: 8px;
+}
+
+.signup-title {
+  font-size: 2rem;
+  text-align: center;
+  color: #333;
+}
+
+.login-text {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.login-link {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.login-link:hover {
+  color: #0056b3;
+}
+
+.v-alert {
+  margin-top: 1rem;
+}
+</style>
