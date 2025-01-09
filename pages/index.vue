@@ -2,22 +2,24 @@
   <v-container class="todo-app mt-4">
     <!-- Header -->
     <v-row class="header" align="center">
-  <!-- Centered Title -->
-  <v-col cols="10" class="d-flex justify-center">
-   <p> <span class="text-primary"> Hello <strong>{{ user.email }}</strong> <h1>Welcome to Todo App! </h1> </span> </p>
-  </v-col>
+      <!-- Centered Title -->
+      <v-col cols="10" class="d-flex justify-center">
+        <p>
+          <span class="text-primary">
+            Hello <strong>{{ user.email }}</strong>
+            <h1>Welcome to Todo App!</h1>
+          </span>
+        </p>
+      </v-col>
 
-  <!-- Right-aligned Logout Button -->
-  <v-col cols="2" class="d-flex justify-end">
-    <v-btn color="error" @click="logout" outlined>Logout</v-btn>
-  </v-col>
-</v-row>
-<v-row>
-  <v-col>
-    
-  </v-col>
-</v-row>
-
+      <!-- Right-aligned Logout Button -->
+      <v-col cols="2" class="d-flex justify-end">
+        <v-btn color="error" @click="logout" outlined>Logout</v-btn>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col> </v-col>
+    </v-row>
 
     <!-- Form to add a new todo -->
     <v-form @submit.prevent="addTodo" class="todo-form mt-4">
@@ -88,7 +90,7 @@
     <!-- Todo List -->
 
     <!-- Loading State -->
-    <v-alert v-if="loader" type="info" text outlined> Loading... </v-alert>
+    <v-alert v-if="loader" type="info" text outlined><v-progress-circular interdiminate></v-progress-circular> Loading... </v-alert>
 
     <!-- Error State -->
     <v-alert v-if="error" type="error" text outlined>
@@ -188,8 +190,6 @@ const addTodo = async () => {
     return;
   }
   try {
-
-
     const response = await fetch("/api/todos/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -202,10 +202,11 @@ const addTodo = async () => {
 
     newTodo.value = ""; // Reset input
     refresh(); // Refetch todos
-    
   } catch (err) {
     alert(err.message || "An unexpected error occurred while adding the todo.");
-  }finally{loader.value=false}
+  } finally {
+    loader.value = false;
+  }
 };
 
 // Function to confirm the deletion of a todo
@@ -234,7 +235,9 @@ const deleteTodoConfirm = async () => {
     alert(
       err.message || "An unexpected error occurred while deleting the todo."
     );
-  }finally{loader.value=false}
+  } finally {
+    loader.value = false;
+  }
 };
 
 // Function to cancel the delete action
@@ -245,7 +248,7 @@ const cancelDelete = () => {
 
 // Function to toggle todo status
 const toggleStatus = async (todo) => {
- loader.value = true;
+  loader.value = true;
   const updatedStatus = !todo.status;
 
   try {
@@ -264,7 +267,9 @@ const toggleStatus = async (todo) => {
     alert(
       err.message || "An unexpected error occurred while updating the status."
     );
-  }finally{loader.value=false}
+  } finally {
+    loader.value = false;
+  }
 };
 
 const totalTasks = computed(() => data?.value?.data?.length || 0);
@@ -291,7 +296,9 @@ const logout = async () => {
   } catch (err) {
     console.error("Unexpected error during sign out:", err.message);
     alert("An unexpected error occurred during the sign out process.");
-  }finally{loader.value=false}
+  } finally {
+    loader.value = false;
+  }
 };
 </script>
 
