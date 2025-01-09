@@ -88,7 +88,7 @@
     <!-- Todo List -->
 
     <!-- Loading State -->
-    <v-alert v-if="!data" type="info" text outlined> Loading... </v-alert>
+    <v-alert v-if="loader" type="info" text outlined> Loading... </v-alert>
 
     <!-- Error State -->
     <v-alert v-if="error" type="error" text outlined>
@@ -160,6 +160,7 @@ const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 // Reactive state variables
 const newTodo = ref("");
+let loader = ref(false);
 
 // For managing the delete dialog visibility and selected todo ID
 const deleteDialog = ref(false);
@@ -181,12 +182,14 @@ watchEffect(() => {
 
 // Function to add a new todo
 const addTodo = async () => {
+  loader.value = true;
   if (!newTodo.value.trim()) {
     alert("Please enter a todo title!");
     return;
   }
-
   try {
+
+
     const response = await fetch("/api/todos/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -199,9 +202,10 @@ const addTodo = async () => {
 
     newTodo.value = ""; // Reset input
     refresh(); // Refetch todos
+    
   } catch (err) {
     alert(err.message || "An unexpected error occurred while adding the todo.");
-  }
+  }finally{loader.value=false}
 };
 
 // Function to confirm the deletion of a todo
@@ -212,6 +216,7 @@ const confirmDelete = (id) => {
 
 // Function to delete a todo
 const deleteTodoConfirm = async () => {
+  loader.value = true;
   if (!todoToDelete.value) return;
 
   try {
@@ -229,7 +234,7 @@ const deleteTodoConfirm = async () => {
     alert(
       err.message || "An unexpected error occurred while deleting the todo."
     );
-  }
+  }finally{loader.value=false}
 };
 
 // Function to cancel the delete action
@@ -240,6 +245,7 @@ const cancelDelete = () => {
 
 // Function to toggle todo status
 const toggleStatus = async (todo) => {
+ loader.value = true;
   const updatedStatus = !todo.status;
 
   try {
@@ -258,7 +264,7 @@ const toggleStatus = async (todo) => {
     alert(
       err.message || "An unexpected error occurred while updating the status."
     );
-  }
+  }finally{loader.value=false}
 };
 
 const totalTasks = computed(() => data?.value?.data?.length || 0);
@@ -271,6 +277,7 @@ const completedPercentage = computed(() =>
 
 // Logout function
 const logout = async () => {
+  loader.value = true;
   try {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -284,7 +291,7 @@ const logout = async () => {
   } catch (err) {
     console.error("Unexpected error during sign out:", err.message);
     alert("An unexpected error occurred during the sign out process.");
-  }
+  }finally{loader.value=false}
 };
 </script>
 
