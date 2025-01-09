@@ -1,51 +1,74 @@
 import { PrismaClient } from "@prisma/client";
+import { serverSupabaseUser } from '#supabase/server';
+
 const prisma = new PrismaClient();
-import { serverSupabaseUser } from '#supabase/server'
 
 export default defineEventHandler(async (event) => {
-  let user = await serverSupabaseUser(event)
-  console.log('user', user);
+  // 1. Authenticate user
+  const user = await serverSupabaseUser(event);
   if (!user) {
     return {
-      // status: 401,
-      message: "Unauthorized",
+      statusCode: 401,
+      message: "Unauthorized - Please log in to create todos",
     };
   }
+
   try {
-    // Read the body from the request
     const body = await readBody(event);
 
-    // Validate if the body contains the necessary fields for creating a todo
-    if (!body || !body.title || typeof body.status === 'undefined') {
+    // 2. Validate request body
+    if (!body?.title?.trim()) {
       return {
         statusCode: 400,
-        message: "Invalid body. The request must contain 'title' and 'status' fields.",
+        message: "Invalid request: Title is required",
       };
     }
-    
 
-    // Create a new todo using Prisma
+    // 3. Check if user already has a todo with this title
+    const existingTodo = await prisma.todo.findFirst({
+      where: {
+        AND: [
+          { title: body.title.trim() },
+          { uid: user.id }
+        ]
+      }
+    });
+
+    if (existingTodo) {
+      return {
+        statusCode: 409, // Conflict
+        message: "You already have a todo with this title",
+      };
+    }
+
+    // 4. Create new todo
     const todo = await prisma.todo.create({
       data: {
-        title: body.title,
-        status: body.status,
+        title: body.title.trim(),
+        status: body.status ?? false,
         uid: user.id
       },
     });
 
-    // Return success response
     return {
-      success: true,
+      statusCode: 201, // Created
+      message: "Todo created successfully",
       data: todo,
     };
   } catch (error) {
-    // Log the error for debugging
-    console.error(error);
+    console.error("Error creating todo:", error);
+    
+    // Check for specific Prisma errors
+    if (error.code === 'P2002') {
+      return {
+        statusCode: 409,
+        message: "You already have a todo with this title",
+      };
+    }
 
-    // Return error response in case of failure
     return {
       statusCode: 500,
-      message: "An error occurred while creating the todo.",
+      message: "An error occurred while creating the todo",
     };
   }
 });
