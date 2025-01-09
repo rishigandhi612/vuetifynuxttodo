@@ -16,18 +16,6 @@ export default defineEventHandler(async (event) => {
     // Convert ID to an integer
     const parsedId = parseInt(id);
 
-    // Check if the todo exists before trying to delete
-    const todo = await prisma.todo.findUnique({
-      where: { id: parsedId },
-    });
-
-    if (!todo) {
-      return {
-        statusCode: 404,
-        message: `Todo with ID ${id} not found.`,
-      };
-    }
-
     // Delete the todo
     const res = await prisma.todo.delete({
       where: {
