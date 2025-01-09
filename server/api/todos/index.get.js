@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { serverSupabaseUser } from '#supabase/server'
 
 // Singleton pattern to prevent re-instantiating PrismaClient
 let prisma;
@@ -15,6 +16,13 @@ if (process.env.NODE_ENV === "production") {
 }
 
 export default defineEventHandler(async (event) => {
+  let user = serverSupabaseUser(event)
+  if (!user) {
+    return {
+      status: 401,
+      message: "Unauthorized",
+    };
+  }
   try {
     // Fetch all todos from the database
     const todos = await prisma.todo.findMany();
