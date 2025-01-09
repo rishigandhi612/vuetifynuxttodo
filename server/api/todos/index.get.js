@@ -2,38 +2,47 @@ import { PrismaClient } from "@prisma/client";
 import { serverSupabaseUser } from '#supabase/server'
 
 // Singleton pattern to prevent re-instantiating PrismaClient
-let prisma = new PrismaClient();
+const prisma = new PrismaClient();
 
 export default defineEventHandler(async (event) => {
-  let user = await serverSupabaseUser(event)
-  console.log('user', user);
+  // 1. Authenticate user
+  const user = await serverSupabaseUser(event);
   if (!user) {
     return {
-      // status: 401,
-      message: "Unauthorized",
+      statusCode: 401,
+      message: "Unauthorized - Please log in to view todos",
     };
   }
+
   try {
-    // Fetch all todos from the database
+    // 2. Fetch only the todos belonging to the authenticated user
     const todos = await prisma.todo.findMany({
       where: {
         uid: user.id
+      },
+      orderBy: {
+        createdAt: 'desc'  // Show newest todos first
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        createdAt: true,
+        // uid is excluded for security
       }
     });
 
-    // Return the todos with a success status
+    // 3. Return success response
     return {
-      status: 200,
+      statusCode: 200,
+      message: "Todos fetched successfully",
       data: todos,
     };
   } catch (error) {
-    // Log the error for debugging
     console.error("Error fetching todos:", error);
-
-    // Return a structured error response
     return {
       statusCode: 500,
-      message: "Error fetching todos. Please try again later.",
+      message: "An error occurred while fetching todos",
     };
   }
 });
