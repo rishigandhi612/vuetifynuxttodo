@@ -20,5 +20,5 @@ model Todo {
   uid       String    @default("")
   createdAt DateTime  @default(now())
 
-  @@unique([title, uid])  // Make title unique per user
+ @@unique([title, uid], name: "title_uid") // Make title unique per user
 }
