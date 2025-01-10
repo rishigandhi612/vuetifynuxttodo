@@ -1,5 +1,5 @@
 <template>
-  <v-container class="login-container" fluid style="height: 100vh;">
+  <v-container fluid style="height: 100vh;">
     <v-row justify="center" align="center" class="fill-height">
       <v-col cols="12" md="6" lg="4">
         <v-card class="login-card" elevation="4">
@@ -47,6 +47,10 @@
             <p class="signup-text">
               Don't have an account? <NuxtLink to="/signup" class="signup-link">Sign Up</NuxtLink>
             </p>
+            <p class="signup-text">
+              Forgot Password? 
+              <span class="signup-link" @click="showResetDialog = true">Reset</span>
+            </p>
           </v-card-actions>
         </v-card>
       </v-col>
@@ -56,58 +60,85 @@
     <v-snackbar v-model="snackbarVisible" color="green" top>
       Login successful! Redirecting...
     </v-snackbar>
+
+    <!-- Password Reset Dialog -->
+    <v-dialog v-model="showResetDialog" max-width="400px">
+      <v-card>
+        <v-card-title class="text-h5">Reset Password</v-card-title>
+        <v-card-text>
+          <v-form v-model="resetFormValid">
+            <v-text-field
+              v-model="resetEmail"
+              label="Enter your email"
+              :rules="[emailRules]"
+              required
+            />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn color="primary" :disabled="loading || !resetFormValid" @click="handlePasswordReset">
+            {{ loading ? 'Sending...' : 'Send Reset Link' }}
+          </v-btn>
+          <v-btn color="secondary" text @click="showResetDialog = false">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 
-const email = ref("rishigandhi021@gmail.com");
-const password = ref("Rishi@123");
+const email = ref("");
+const password = ref("");
 const error = ref(null);
 const loading = ref(false);
 const snackbarVisible = ref(false);
 const formValid = ref(false);
+const showResetDialog = ref(false);
+const resetEmail = ref("");
+const resetFormValid = ref(false);
 
 const supabase = useSupabaseClient();
 
 // Validation rules for Vuetify text fields
 const emailRules = [(v) => !!v || 'Email is required'];
-const passwordRules = [(v) => !!v || 'Password is required'];
 
 const handleLogin = async () => {
   loading.value = true;
   error.value = null;
 
   try {
-    const { data, error: loginError } = await supabase.auth.signInWithPassword({
+    const { error: loginError } = await supabase.auth.signInWithPassword({
       email: email.value,
       password: password.value,
     });
 
     if (loginError) throw loginError;
 
-    // Show snackbar on success
     snackbarVisible.value = true;
-
-    // Redirect to Confirm Page to check user info
     navigateTo('/confirm');
   } catch (err) {
-    // Handle specific error code and message from backend
-    if (err.code === 'invalid_credentials') {
-      error.value = 'Invalid login credentials';
-    } else {
-      error.value = err.message;
-    }
+    error.value = err.message || 'An error occurred during login';
   } finally {
     loading.value = false;
   }
 };
 
-// Redirect if already logged in
-onMounted(() => {
-  //..
-});
+const handlePasswordReset = async () => {
+  loading.value = true;
+  try {
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.value);
+    if (resetError) throw resetError;
+
+    snackbarVisible.value = true;
+    showResetDialog.value = false;
+  } catch (err) {
+    error.value = err.message || 'Failed to send reset link';
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -137,6 +168,7 @@ onMounted(() => {
   color: #007bff;
   text-decoration: none;
   font-weight: bold;
+  cursor: pointer;
   transition: color 0.3s ease;
 }
 
