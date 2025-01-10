@@ -28,7 +28,7 @@
                 color="primary"
                 block
               >
-                {{ loading ? 'Updating...' : 'Update Password' }}
+                {{ loading ? "Updating..." : "Update Password" }}
               </v-btn>
   
               <!-- Error Alert -->
@@ -48,50 +48,82 @@
   </template>
   
   <script setup>
-  import { ref } from 'vue';
-  
-  const newPassword = ref("");
-  const confirmPassword = ref("");
-  const error = ref(null);
-  const loading = ref(false);
-  const formValid = ref(false);
-  const snackbarVisible = ref(false);
-  
-  const supabase = useSupabaseClient();
-  
-  // Validation rules
-  const passwordRules = [
-    (v) => !!v || "Password is required",
-    (v) => v.length >= 6 || "Password must be at least 6 characters",
-  ];
-  const confirmPasswordRules = [
-    (v) => !!v || "Confirm Password is required",
-    (v) => v === newPassword.value || "Passwords do not match",
-  ];
-  
-  const handlePasswordUpdate = async () => {
-    loading.value = true;
-    error.value = null;
-  
+ import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+
+const newPassword = ref("");
+const confirmPassword = ref("");
+const error = ref(null);
+const loading = ref(false);
+const formValid = ref(false);
+const snackbarVisible = ref(false);
+
+const router = useRouter();
+const supabase = useSupabaseClient();
+
+// Validation rules
+const passwordRules = [
+  (v) => !!v || "Password is required",
+  (v) => v.length >= 6 || "Password must be at least 6 characters",
+];
+const confirmPasswordRules = [
+  (v) => !!v || "Confirm Password is required",
+  (v) => v === newPassword.value || "Passwords do not match",
+];
+
+const handlePasswordUpdate = async () => {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const accessToken = window.localStorage.getItem("supabase_token");
+    if (!accessToken) throw new Error("Reset token is missing!");
+
+    // Update the user's password using the access token
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword.value,
+    });
+
+    if (updateError) throw updateError;
+
+    // Show success message and redirect
+    snackbarVisible.value = true;
+    setTimeout(() => {
+      router.push("/login");
+    }, 2000);
+  } catch (err) {
+    error.value = err.message || "Failed to update password";
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(async () => {
+  // Extract the access token from the fragment
+  const hash = window.location.hash;
+  const params = new URLSearchParams(hash.replace("#", ""));
+  const accessToken = params.get("access_token");
+
+  if (accessToken) {
     try {
-      // Assuming Supabase provides a method to update the user's password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword.value,
+      // Store the token temporarily in localStorage
+      window.localStorage.setItem("supabase_token", accessToken);
+
+      // Set the session for Supabase
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: params.get("refresh_token"),
       });
-  
-      if (updateError) throw updateError;
-  
-      // Show success message and redirect
-      snackbarVisible.value = true;
-      setTimeout(() => {
-        navigateTo("/login");
-      }, 2000);
+
+      if (sessionError) throw sessionError;
     } catch (err) {
-      error.value = err.message || "Failed to update password";
-    } finally {
-      loading.value = false;
+      error.value = "Failed to validate reset token.";
     }
-  };
+  } else {
+    error.value = "Reset token is missing!";
+  }
+});
+
   </script>
   
   <style scoped>

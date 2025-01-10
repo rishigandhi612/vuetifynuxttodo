@@ -57,8 +57,8 @@
     </v-row>
 
     <!-- Snackbar for success -->
-    <v-snackbar v-model="snackbarVisible" color="green" top>
-      Login successful! Redirecting...
+    <v-snackbar v-model="snackbarVisible" top>
+      {{ snackbarMessage }}
     </v-snackbar>
 
     <!-- Password Reset Dialog -->
@@ -94,6 +94,7 @@ const password = ref("");
 const error = ref(null);
 const loading = ref(false);
 const snackbarVisible = ref(false);
+const snackbarMessage = ref("");
 const formValid = ref(false);
 const showResetDialog = ref(false);
 const resetEmail = ref("");
@@ -116,7 +117,11 @@ const handleLogin = async () => {
 
     if (loginError) throw loginError;
 
+    // Update snackbar message and show it
+    snackbarMessage.value = "Login successful! Redirecting...";
     snackbarVisible.value = true;
+
+    // Redirect
     navigateTo('/confirm');
   } catch (err) {
     error.value = err.message || 'An error occurred during login';
@@ -131,7 +136,11 @@ const handlePasswordReset = async () => {
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.value);
     if (resetError) throw resetError;
 
+    // Update snackbar message and show it
+    snackbarMessage.value = "Password reset link sent to your email!";
     snackbarVisible.value = true;
+
+    // Close reset dialog
     showResetDialog.value = false;
   } catch (err) {
     error.value = err.message || 'Failed to send reset link';
