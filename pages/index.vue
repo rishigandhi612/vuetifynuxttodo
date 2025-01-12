@@ -148,7 +148,7 @@
                 'text-body': !todo.status,
               }"
             >
-              {{ formatDate(todo.createdAt) }}
+              {{dateRef.format(todo.createdAt,'fullDateTime12h') }}
             </v-list-item-title>
           </v-col>
 
@@ -192,26 +192,27 @@
       </v-card>
     </v-dialog>
 
-
-
-
     <!-- Snackbar -->
-    <v-snackbar v-model="snackbar.visible" timeout="1000">
-      {{ snackbar.message }}
-      <template v-slot:actions>
-        <v-btn color="pink" variant="text" @click="snackbar.visible = false">
-          Close
-        </v-btn>
-      </template>
-    </v-snackbar>
+    <AppSnackbar/>
   </v-container>
 </template>
 
 <script setup>
 import { ref, watchEffect, computed } from "vue";
+import { useDate } from 'vuetify'
+
+const {
+  
+  snackBarMessage,
+  snackBarStatus,
+  snackBarcolor,
+  ShowSnackbar,
+  HideSnackbar,
+} = useSnackBar();
+
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
-
+const dateRef = useDate()
 // Reactive state variables
 const newTodo = ref("");
 let loader = ref(false);
@@ -263,27 +264,12 @@ const addTodo = async () => {
 
     newTodo.value = ""; // Reset input
     refresh(); // Refetch todos
-    snackbar.value = {
-      visible: true,
-      message: "Todo added successfully!",
-      color: "success",
-    };
+    ShowSnackbar("Todo added successfully!");
   } catch (err) {
     alert(err.message || "An unexpected error occurred while adding the todo.");
   } finally {
     loadingAddTodo.value = false;
   }
-};
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0"); // Month is 0-indexed
-  const year = date.getFullYear().toString().slice(2); // Get last 2 digits of the year
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-
-  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
 };
 // Sort todos by 'createdAt' in ascending order (earliest first) and then reverse it
 const sortedTodos = computed(() => {
@@ -291,8 +277,6 @@ const sortedTodos = computed(() => {
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) // Sort by 'createdAt' ascending
     .reverse(); // Reverse the sorted array to get the latest at the top
 });
-
-// Function to delete a todo directly
 
 // Function to open the delete confirmation dialog
 const openDeleteDialog = (todo) => {
@@ -316,11 +300,7 @@ const confirmDelete = async () => {
 
     // Refetch todos after successful deletion
     refresh();
-    snackbar.value = {
-      visible: true,
-      message: "Todo deleted successfully!",
-      color: "success",
-    };
+    ShowSnackbar("Todo deleted successfully!");
   } catch (err) {
     alert(
       err.message || "An unexpected error occurred while deleting the todo."
@@ -350,11 +330,7 @@ const toggleStatus = async (todo) => {
 
     // Refetch todos after updating the status
     refresh();
-    snackbar.value = {
-      visible: true,
-      message: "Todo status updated successfully!",
-      color: "success",
-    };
+    ShowSnackbar("Todo status updated successfully!");
   } catch (err) {
     alert(
       err.message || "An unexpected error occurred while updating the status."
@@ -392,4 +368,5 @@ const logout = async () => {
     loadingLogout.value = false;
   }
 };
+
 </script>

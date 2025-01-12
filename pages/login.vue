@@ -1,10 +1,10 @@
 <template>
-  <v-container fluid style="height: 100vh;">
+  <v-container fluid style="height: 100vh">
     <v-row justify="center" align="center" class="fill-height">
       <v-col cols="12" md="6" lg="4">
-        <v-card class="login-card" elevation="4">
+        <v-card class="pa-4" elevation="4">
           <v-card-title class="login-title">
-            <span>Login</span>
+            <span>Login</span> 
           </v-card-title>
 
           <v-form @submit.prevent="handleLogin" v-model="formValid">
@@ -34,7 +34,7 @@
               color="primary"
               block
             >
-              {{ loading ? 'Logging in...' : 'Login' }}
+              {{ loading ? "Logging in..." : "Login" }}
             </v-btn>
 
             <!-- Error Alert -->
@@ -44,12 +44,15 @@
           </v-form>
 
           <v-card-actions>
-            <p class="signup-text">
-              Don't have an account? <NuxtLink to="/signup" class="signup-link">Sign Up</NuxtLink>
+            <p>
+              Don't have an account?
+              <NuxtLink to="/signup" class="text-primary">Sign Up</NuxtLink>
             </p>
-            <p class="signup-text">
-              Forgot Password? 
-              <span class="signup-link" @click="showResetDialog = true">Reset</span>
+            <p>
+              Forgot Password?
+              <span class="text-primary" @click="showResetDialog = true"
+                >Reset</span
+              >
             </p>
           </v-card-actions>
         </v-card>
@@ -57,10 +60,10 @@
     </v-row>
 
     <!-- Snackbar for success -->
-    <v-snackbar v-model="snackbarVisible" top>
+    <!-- <v-snackbar v-model="snackbarVisible" top>
       {{ snackbarMessage }}
-    </v-snackbar>
-
+    </v-snackbar> -->
+    <AppSnackbar/>
     <!-- Password Reset Dialog -->
     <v-dialog v-model="showResetDialog" max-width="400px">
       <v-card>
@@ -76,10 +79,16 @@
           </v-form>
         </v-card-text>
         <v-card-actions>
-          <v-btn color="primary" :disabled="loading || !resetFormValid" @click="handlePasswordReset">
-            {{ loading ? 'Sending...' : 'Send Reset Link' }}
+          <v-btn
+            color="primary"
+            :disabled="loading || !resetFormValid"
+            @click="handlePasswordReset"
+          >
+            {{ loading ? "Sending..." : "Send Reset Link" }}
           </v-btn>
-          <v-btn color="secondary" text @click="showResetDialog = false">Cancel</v-btn>
+          <v-btn color="secondary" text @click="showResetDialog = false"
+            >Cancel</v-btn
+          >
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -87,14 +96,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref } from "vue";
+
+const {
+  
+  snackBarMessage,
+  snackBarStatus,
+  snackBarcolor,
+  ShowSnackbar,
+  HideSnackbar,
+} = useSnackBar();
 
 const email = ref("");
 const password = ref("");
 const error = ref(null);
 const loading = ref(false);
-const snackbarVisible = ref(false);
-const snackbarMessage = ref("");
 const formValid = ref(false);
 const showResetDialog = ref(false);
 const resetEmail = ref("");
@@ -103,7 +119,7 @@ const resetFormValid = ref(false);
 const supabase = useSupabaseClient();
 
 // Validation rules for Vuetify text fields
-const emailRules = [(v) => !!v || 'Email is required'];
+const emailRules = [(v) => !!v || "Email is required"];
 
 const handleLogin = async () => {
   loading.value = true;
@@ -118,13 +134,11 @@ const handleLogin = async () => {
     if (loginError) throw loginError;
 
     // Update snackbar message and show it
-    snackbarMessage.value = "Login successful! Redirecting...";
-    snackbarVisible.value = true;
-
+    else ShowSnackbar("Login successful! Redirecting...");
     // Redirect
-    navigateTo('/confirm');
+    navigateTo("/confirm");
   } catch (err) {
-    error.value = err.message || 'An error occurred during login';
+    error.value = err.message || "An error occurred during login";
   } finally {
     loading.value = false;
   }
@@ -133,59 +147,20 @@ const handleLogin = async () => {
 const handlePasswordReset = async () => {
   loading.value = true;
   try {
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail.value);
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      resetEmail.value
+    );
     if (resetError) throw resetError;
 
-    // Update snackbar message and show it
-    snackbarMessage.value = "Password reset link sent to your email!";
-    snackbarVisible.value = true;
+    // Call snackbar composable to show success message
+    else ShowSnackbar("Password reset link sent to your email!");
 
     // Close reset dialog
     showResetDialog.value = false;
   } catch (err) {
-    error.value = err.message || 'Failed to send reset link';
+    error.value = err.message || "Failed to send reset link";
   } finally {
     loading.value = false;
   }
 };
 </script>
-
-<style scoped>
-.login-container {
-  background-color: #f7f9fc;
-}
-
-.login-card {
-  padding: 2rem;
-  border-radius: 8px;
-}
-
-.login-title {
-  font-size: 1.8rem;
-  text-align: center;
-  color: #333;
-}
-
-.signup-text {
-  margin-top: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #555;
-}
-
-.signup-link {
-  color: #007bff;
-  text-decoration: none;
-  font-weight: bold;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-.signup-link:hover {
-  color: #0056b3;
-}
-
-.v-alert {
-  margin-top: 1rem;
-}
-</style>

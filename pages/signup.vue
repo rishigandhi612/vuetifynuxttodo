@@ -2,7 +2,7 @@
   <v-container class="signup-container" fluid style="height: 100vh;">
     <v-row justify="center" align="center" class="fill-height">
       <v-col cols="12" md="6" lg="4">
-        <v-card class="signup-card" elevation="4">
+        <v-card class="pa-4" elevation="4">
           <v-card-title class="signup-title">
             <span>Sign Up</span>
           </v-card-title>
@@ -45,21 +45,15 @@
 
           <v-card-actions>
             <p class="login-text">
-              Already have an account? <NuxtLink to="/login" class="login-link">Login</NuxtLink>
+              Already have an account? <NuxtLink to="/login" class="text-primary">Login</NuxtLink>
             </p>
           </v-card-actions>
         </v-card>
       </v-col>
     </v-row>
 
-    <!-- Snackbar for success or error messages -->
-    <v-snackbar v-model="snackbarVisible" :color="snackbarColor" top>
-      {{ snackbarMessage }}
-      <template #action>
-        <v-btn color="pink" text @click="snackbarVisible = false">Close</v-btn>
-      </template>
-    </v-snackbar>
-
+    <!-- Snackbar -->
+   <AppSnackbar/>
     <!-- Dialog for email verification -->
     <v-dialog v-model="dialogVisible" max-width="500">
       <v-card>
@@ -83,11 +77,15 @@ const password = ref("");
 const error = ref(null);
 const loading = ref(false);
 const formValid = ref(false);
-const snackbarVisible = ref(false);
-const snackbarMessage = ref("");
-const snackbarColor = ref("success");
 const dialogVisible = ref(false);
-
+const {
+  
+  snackBarMessage,
+  snackBarStatus,
+  snackBarcolor,
+  ShowSnackbar,
+  HideSnackbar,
+} = useSnackBar();
 const supabase = useSupabaseClient();
 
 // Validation rules for Vuetify text fields
@@ -114,9 +112,7 @@ const handleSignup = async () => {
         dialogVisible.value = true;
       } else {
         // Email verified: user already exists
-        snackbarMessage.value = "User already exists. Kindly sign in.";
-        snackbarColor.value = "warning";
-        snackbarVisible.value = true;
+        ShowSnackbar("User already exists. Kindly sign in.");
         await delay(2000);
         navigateTo('/login'); // Redirect to login
       }
@@ -139,50 +135,10 @@ onMounted(async () => {
       dialogVisible.value = true;
     } else {
       // User already exists
-      snackbarMessage.value = "User already exists. Kindly sign in.";
-      snackbarColor.value = "warning";
-      snackbarVisible.value = true;
+      ShowSnackbar("User already exists. Kindly sign in.");
       navigateTo('/login');
     }
   }
 });
 </script>
 
-<style scoped>
-.signup-container {
-  background-color: #f8f9fa;
-}
-
-.signup-card {
-  padding: 2rem;
-  border-radius: 8px;
-}
-
-.signup-title {
-  font-size: 2rem;
-  text-align: center;
-  color: #333;
-}
-
-.login-text {
-  margin-top: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #555;
-}
-
-.login-link {
-  color: #007bff;
-  text-decoration: none;
-  font-weight: bold;
-  transition: color 0.3s ease;
-}
-
-.login-link:hover {
-  color: #0056b3;
-}
-
-.v-alert {
-  margin-top: 1rem;
-}
-</style>
