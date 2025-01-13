@@ -1,200 +1,129 @@
 <template>
     <v-container>
-          <!-- Todo List -->
-
-    <!-- Loading State -->
-    <v-alert v-if="loader" type="info" text outlined>
-      <v-progress-circular indeterminate></v-progress-circular> Loading...
-    </v-alert>
-
-    <!-- Error State -->
-    <v-alert v-if="error" type="error" text outlined>
-      Error: {{ error.message }}
-    </v-alert>
-
- 
-    <!-- Todo Items -->
-    <v-container v-if="sortedTodos?.length">
-      <v-list-item
-        v-for="todo in sortedTodos"
-        :key="todo.id"
-        class="todo-item"
-        rounded
-      >
-        <v-row align="center">
-          <!-- Checkbox -->
-          <v-col cols="2" md="2" sm="2">
-            <template v-if="loadingToggleStatus[todo.id]">
-              <v-progress-circular
-                :size="24"
-                :width="4"
-                color="primary"
-                indeterminate
-              ></v-progress-circular>
-            </template>
-            <template v-else>
+      <!-- Icon Buttons for Grid/List View Toggle -->
+      <v-row align="right" justify="end">
+        <v-btn icon @click="toggleView" elevation="0">
+          <v-icon>{{
+            isGridView ? "mdi-format-list-checkbox" : "mdi-grid"
+          }}</v-icon>
+        </v-btn>
+      </v-row>
+  
+      <!-- Loading State -->
+      <v-alert v-if="loader" type="info" text outlined>
+        <v-progress-circular indeterminate></v-progress-circular> Loading...
+      </v-alert>
+  
+      <!-- Error State -->
+      <v-alert v-if="error" type="error" text outlined>
+        Error: {{ error.message }}
+        <v-btn text color="primary" @click="fetchTodos">Retry</v-btn>
+      </v-alert>
+  
+      <!-- Grid View (Cards) -->
+      <v-row v-if="isGridView && sortedTodos.length">
+        <v-col v-for="todo in sortedTodos" :key="todo.id" cols="12" sm="6" md="4">
+          <v-card>
+            <v-card-title>{{ todo.title }}</v-card-title>
+            <v-card-subtitle>{{
+              dateRef.format(todo.createdAt, "fullDateTime12h")
+            }}</v-card-subtitle>
+            <v-card-actions>
               <v-checkbox
                 v-model="todo.status"
                 @click="toggleStatus(todo)"
                 hide-details
               ></v-checkbox>
-            </template>
-          </v-col>
-
-          <!-- Task Title -->
-          <v-col cols="8" md="4" sm="4">
-            <v-list-item-title
-              :class="{
-                'text-decoration-line-through': todo.status,
-                'text-body': !todo.status,
-              }"
-            >
-              {{ todo.title }}
-            </v-list-item-title>
-          </v-col>
-          
-          <v-col cols="6" md="4" sm="4"   class="d-none d-sm-flex">
-            <v-list-item-title
-              :class="{
-                'text-decoration-line-through': todo.status,
-                'text-body': !todo.status,
-              }"
-            >
-              {{dateRef.format(todo.createdAt,'fullDateTime12h') }}
-            </v-list-item-title>
-          </v-col>
-
-          <!-- Delete Button with confirmation -->
-          <v-col cols="2" md="2" sm="2">
-            <template v-if="loadingDeleteTodo[todo.id]">
-              <v-progress-circular
-                :size="24"
-                :width="4"
-                color="error"
-                indeterminate
-              />
-            </template>
-            <template v-else>
-              <v-btn icon="mdi-delete"
-                color="error"
-                @click="openDeleteDialog(todo)"
-                variant="outlined"
-                size="small"
-              >
-                
-              </v-btn>
-            </template>
-          </v-col>
-        </v-row>
-      </v-list-item>
-    </v-container>
-    <!-- Empty State -->
-    <v-alert v-else type="info" text outlined>
-      No todos yet! Add your first task.
-    </v-alert>
-
-    <!-- Confirmation Dialog -->
-    <v-dialog v-model="deleteDialogVisible" max-width="400px">
-      <v-card>
-        <v-card-title class="headline">Are you sure you want to delete this task?</v-card-title>
-        <v-card-actions>
-          <v-btn color="red" @click="deleteDialogVisible = false">Cancel</v-btn>
-          <v-btn color="green" :loading="deleteLoading" @click="confirmDelete">Confirm</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    </v-container>
-</template>
-
-<script setup>
-import { ref , computed } from "vue";
-import { useDate } from 'vuetify'
-
-let loader = ref(false);
-const {
+              <DeleteTodoButton :todo="todo" @delete="handleDelete" />
+            </v-card-actions>
+          </v-card>
+        </v-col>
+      </v-row>
   
-  snackBarMessage,
-  snackBarStatus,
-  snackBarcolor,
-  ShowSnackbar,
-  HideSnackbar,
-} = useSnackBar();
-const dateRef = useDate()
-let loadingDeleteTodo = ref({}); // Initialize as an object to track each todo
-let loadingToggleStatus = ref({});
-const deleteDialogVisible = ref(false);
-const deleteLoading = ref(false);
-let todoToDelete = ref(null); // Store the todo to delete
-// Fetch todos with error handling
-let { data, error } = await fetchtodo();
-
-// Sort todos by 'createdAt' in ascending order (earliest first) and then reverse it
-const sortedTodos = computed(() => {
-  return (data?.value?.data || [])
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) // Sort by 'createdAt' ascending
-    .reverse(); // Reverse the sorted array to get the latest at the top
-});
-// Function to open the delete confirmation dialog
-const openDeleteDialog = (todo) => {
-  todoToDelete.value = todo; // Store the todo to delete
-  deleteDialogVisible.value = true; // Show the dialog
-};
-// Function to confirm delete
-const confirmDelete = async () => {
-  if (!todoToDelete.value) return;
-
-  deleteLoading.value = true; // Set loading state for delete button
-
-  try {
-    const response = await fetch(`/api/todos/${todoToDelete.value.id}`, {
-      method: "DELETE",
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to delete the todo. Please try again.");
+      <!-- Table View -->
+      <v-data-table
+  v-if="!isGridView && sortedTodos.length"
+  :headers="tableHeaders" 
+  :items="sortedTodos"
+>
+        <!-- Custom cell rendering for status -->
+        <template #item.status="{ item }">
+          <v-checkbox
+            v-model="item.status"
+            @click="toggleStatus(item)"
+            hide-details
+          ></v-checkbox>
+        </template>
+  
+        <!-- Custom cell rendering for createdAt -->
+        <template #item.createdAt="{ item }">
+          {{ dateRef.format(item.createdAt, "fullDateTime12h") }}
+        </template>
+  
+        <!-- Custom cell rendering for actions -->
+        <template #item.actions="{ item }">
+          <DeleteTodoButton :todo="item" @delete="handleDelete" />
+        </template>
+  
+        <!-- No data slot -->
+        <template #no-data>
+          <v-alert type="info" text outlined>No todos yet! Add your first task.</v-alert>
+        </template>
+      </v-data-table>
+  
+      <!-- Empty State -->
+      <v-alert v-if="!sortedTodos.length" type="info" text outlined>
+        No todos yet! Add your first task.
+      </v-alert>
+    </v-container>
+  </template>
+  
+  <script setup>
+  import { ref, computed } from "vue";
+  import { useDate } from "vuetify";
+  
+  let loader = ref(false);
+  const dateRef = useDate();
+  const isGridView = ref(false);
+  let loadingToggleStatus = ref({});
+  const tableHeaders = [
+  { text: "Status", value: "status", align: "start", width: "10%" },
+  { text: "Title", value: "title", align: "start", width: "50%" },
+  { text: "Created At", value: "createdAt", align: "start", width: "30%" },
+  { text: "Actions", value: "actions", align: "end", width: "10%" },
+];
+  const { data, error } = await fetchtodo();
+  
+  const sortedTodos = computed(() =>
+    [...(data.value.data || [])].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    )
+  );
+  
+  const handleDelete = (deletedTodo) => {
+    data.value.data = data.value.data.filter((todo) => todo.id !== deletedTodo.id);
+  };
+  
+  const toggleStatus = async (todo) => {
+    loadingToggleStatus.value[todo.id] = true;
+    try {
+      const response = await fetch(`/api/todos/${todo.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: !todo.status }),
+      });
+      if (!response.ok) throw new Error("Failed to update status");
+      todo.status = !todo.status;
+      fetchtodo();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      loadingToggleStatus.value[todo.id] = false;
     }
-
-    // Refetch todos after successful deletion
-    fetchtodo();
-    ShowSnackbar("Todo deleted successfully!");
-  } catch (err) {
-    alert(
-      err.message || "An unexpected error occurred while deleting the todo."
-    );
-  } finally {
-    deleteDialogVisible.value = false; // Close the dialog
-    deleteLoading.value = false; // Reset the loading state
-  }
-};
-// Function to toggle todo status
-const toggleStatus = async (todo) => {
-  // Set loading state to true for the specific todo
-  loadingToggleStatus.value[todo.id] = true;
-
-  const updatedStatus = !todo.status;
-
-  try {
-    const response = await fetch(`/api/todos/${todo.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: updatedStatus }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to update the status. Please try again.");
-    }
-
-    // Refetch todos after updating the status
-    fetchtodo();
-    ShowSnackbar("Todo status updated successfully!");
-  } catch (err) {
-    alert(
-      err.message || "An unexpected error occurred while updating the status."
-    );
-  } finally {
-    // Set loading state back to false after the operation is completed
-    loadingToggleStatus.value[todo.id] = false;
-  }
-};
-</script>
+  };
+  
+  const toggleView = () => {
+    isGridView.value = !isGridView.value;
+  };
+  </script>
+  

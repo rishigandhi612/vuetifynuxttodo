@@ -3,7 +3,7 @@
     <!-- Header -->
     <v-row class="header" align="center">
       <!-- Centered Title -->
-      <v-col cols="12" md="10" class="d-flex justify-center">
+      <v-col cols="9" md="10" class="d-flex justify-center">
         <p>
           <span class="text-primary">
             Hello <strong>{{ user.email }}</strong>
@@ -13,7 +13,7 @@
       </v-col>
 
       <!-- Right-aligned Logout Button -->
-      <v-col cols="12" md="2" class="d-flex justify-end">
+      <v-col cols="3" md="2" class="d-flex justify-end">
         <v-btn :loading="loadingLogout" color="error" @click="logout" outlined>
           Logout
         </v-btn>
@@ -47,7 +47,6 @@
     <!-- Todo Summary -->
     <TodoSummary /> 
     <!-- Todo Summary -->
-    <v-divider class="mt-4"></v-divider>
  
     <!-- Todo List -->
     <TodoList />
