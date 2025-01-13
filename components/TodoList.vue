@@ -127,17 +127,8 @@ const deleteDialogVisible = ref(false);
 const deleteLoading = ref(false);
 let todoToDelete = ref(null); // Store the todo to delete
 // Fetch todos with error handling
-let { data, error, refresh } = await fetchtodo();
-// Fetch todos with error handling
-const fetchTodos = async () => {
-  try {
-    const response = await useFetch("/api/todos");
-    data.value = response.data; // Assign data reactively
-    error.value = response.error; // Handle errors if any
-  } catch (err) {
-    error.value = err;
-  }
-};
+let { data, error } = await fetchtodo();
+
 // Sort todos by 'createdAt' in ascending order (earliest first) and then reverse it
 const sortedTodos = computed(() => {
   return (data?.value?.data || [])
@@ -165,7 +156,7 @@ const confirmDelete = async () => {
     }
 
     // Refetch todos after successful deletion
-    refresh();
+    fetchtodo();
     ShowSnackbar("Todo deleted successfully!");
   } catch (err) {
     alert(
@@ -195,7 +186,7 @@ const toggleStatus = async (todo) => {
     }
 
     // Refetch todos after updating the status
-    refresh();
+    fetchtodo();
     ShowSnackbar("Todo status updated successfully!");
   } catch (err) {
     alert(

@@ -1,6 +1,6 @@
 <template>
   <v-row>
-    <v-col cols="12" md="6" class="d-flex justify-start">
+    <v-col cols="6" md="6" class="d-flex justify-start pa-4">
       <h1 class="text-success">
         <span>Total Tasks:</span>
         <v-fade-transition leave-absolute>
@@ -25,7 +25,7 @@
         </v-col>
         <v-col cols="4">
           <v-progress-circular
-            :value="completedPercentage"
+            v-model="completedPercentage"
             color="success"
             class="me-2"
             x-large
@@ -39,8 +39,7 @@
 <script setup>
 import { ref, computed, watchEffect } from "vue";
 
-// Fetch data using the composable
-const { data, error } = await fetchtodo(); // Call the composable to get data
+const { data, error } = await fetchtodo();
 
 // Reactive counters
 const completedTodos = ref(0);

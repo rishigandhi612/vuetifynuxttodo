@@ -96,7 +96,7 @@ const addTodo = async () => {
     }
 
     newTodo.value = ""; // Reset input
-    refresh(); // Refetch todos
+    fetchtodo(); // Refetch todos
     ShowSnackbar("Todo added successfully!");
   } catch (err) {
     alert(err.message || "An unexpected error occurred while adding the todo.");
