@@ -15,7 +15,20 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // 2. Fetch only the todos belonging to the authenticated user
+    // 2. Get pagination parameters from query
+    const query = getQuery(event)
+    const page = Number(query.page) || 1
+    const limit = Number(query.limit) || 10
+    const skip = (page - 1) * limit
+
+    // 3. Get total count for pagination
+    const total = await prisma.todo.count({
+      where: {
+        uid: user.id
+      }
+    });
+
+    // 4. Fetch paginated todos belonging to the authenticated user
     const todos = await prisma.todo.findMany({
       where: {
         uid: user.id
@@ -29,14 +42,25 @@ export default defineEventHandler(async (event) => {
         status: true,
         createdAt: true,
         // uid is excluded for security
-      }
+      },
+      take: limit,
+      skip: skip
     });
 
-    // 3. Return success response
+    // 5. Return success response with pagination metadata
     return {
       statusCode: 200,
       message: "Todos fetched successfully",
-      data: todos,
+      data: {
+        todos,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasMore: skip + todos.length < total
+        }
+      }
     };
   } catch (error) {
     console.error("Error fetching todos:", error);
