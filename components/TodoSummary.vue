@@ -46,7 +46,7 @@ const completedTodos = ref(0);
 const remainingTodos = ref(0);
 
 // Compute total tasks
-const totalTasks = computed(() => data?.value?.data?.length || 0);
+const totalTasks = computed(() => data?.value?.data?.pagination?.total || 0);
 
 // Compute percentage of completed tasks
 const completedPercentage = computed(() =>
@@ -57,7 +57,7 @@ const completedPercentage = computed(() =>
 
 // Watch for changes in `data` and update counters
 watchEffect(() => {
-  const todos = data?.value?.data || [];
+  const todos = data?.value?.data?.todos || [];
   completedTodos.value = todos.filter((todo) => todo.status).length;
   remainingTodos.value = todos.filter((todo) => !todo.status).length;
 });
