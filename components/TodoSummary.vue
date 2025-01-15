@@ -39,26 +39,24 @@
 <script setup>
 import { ref, computed, watchEffect } from "vue";
 
-const { data, error } = await fetchtodo();
+const { data } = await fetchtodo();
 
 // Reactive counters
 const completedTodos = ref(0);
 const remainingTodos = ref(0);
 
 // Compute total tasks
-const totalTasks = computed(() => data?.value?.data?.pagination?.total || 0);
+const totalTasks = computed(() => data?.data?.pagination?.total);
 
 // Compute percentage of completed tasks
 const completedPercentage = computed(() =>
-  totalTasks.value > 0
-    ? Math.round((completedTodos.value / totalTasks.value) * 100)
-    : 0
+data?.data?.completedTodos
 );
 
 // Watch for changes in `data` and update counters
 watchEffect(() => {
   const todos = data?.value?.data?.todos || [];
-  completedTodos.value = todos.filter((todo) => todo.status).length;
-  remainingTodos.value = todos.filter((todo) => !todo.status).length;
+  completedTodos.value =data?.data?.completedTodos;
+  remainingTodos.value = data?.data?.pendingTodos;
 });
 </script>

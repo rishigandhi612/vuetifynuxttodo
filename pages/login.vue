@@ -14,7 +14,6 @@
               v-model="email"
               required
               label="Enter your email"
-              :rules="[emailRules]"
               class="mb-4"
             />
 
@@ -24,7 +23,6 @@
               v-model="password"
               required
               label="Enter your password"
-              :rules="[passwordRules]"
               class="mb-4"
             />
 
@@ -118,8 +116,6 @@ const resetFormValid = ref(false);
 
 const supabase = useSupabaseClient();
 
-// Validation rules for Vuetify text fields
-const emailRules = [(v) => !!v || "Email is required"];
 
 const handleLogin = async () => {
   loading.value = true;

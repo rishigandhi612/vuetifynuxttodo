@@ -9,7 +9,6 @@
       </v-btn>
     </v-row>
 
-
     <v-alert v-if="loader" type="info" text outlined>
       <v-progress-circular indeterminate></v-progress-circular> Loading...
     </v-alert>
@@ -20,7 +19,7 @@
       <v-btn text color="primary" @click="fetchTodos">Retry</v-btn>
     </v-alert>
 
-
+    <!-- Grid View -->
     <v-row v-if="isGridView && sortedTodos.length">
       <v-col v-for="todo in sortedTodos" :key="todo.id" cols="12" sm="6" md="4">
         <v-card>
@@ -49,13 +48,22 @@
         </v-card>
       </v-col>
     </v-row>
+    <v-row v-if="isGridView && sortedTodos.length">
+      <v-btn v-if="hasMoreItems" block  @click="loadmoreItems" rounded>
+        Load More ... 
+      </v-btn>
+      <!-- <v-btn v-if="!hasMoreItems" block disabled rounded>
+        No more items to display. 
+      </v-btn> -->
 
+    </v-row>
+    <!-- List View (v-data-table-server) -->
     <v-data-table-server
       v-if="!isGridView && sortedTodos.length"
       :headers="tableHeaders"
       :items="sortedTodos"
-      :items-length="totalItems" 
-      @update:options="loadItems"   
+      :items-length="totalItems"
+      @update:options="loadItems"
     >
       <template #item.status="{ item }">
         <v-checkbox
@@ -74,7 +82,7 @@
           </template>
         </v-checkbox>
       </template>
-    
+
       <template #item.createdAt="{ item }">
         {{ dateRef.format(item.createdAt, "fullDateTime12h") }}
       </template>
@@ -102,7 +110,8 @@
 import { ref, computed } from "vue";
 import { useDate } from "vuetify";
 
-let loader = ref(false);
+// Data and UI state
+const loader = ref(false);
 const dateRef = useDate();
 const isGridView = ref(false);
 let loadingToggleStatus = ref({});
@@ -113,34 +122,62 @@ const tableHeaders = [
   { text: "Actions", value: "actions", align: "end", width: "10%" },
 ];
 
-// State for pagination options
-let pagination = ref({
-  page: 1,  // Default page
-  limit: 10, // Default limit (items per page)
+const pagination = ref({
+  page: 1,
+  limit: 10,
 });
 
-const { data, error } = await fetchtodo();
+const data = ref(null);
+const error = ref(null);
 
-// Computed property for total items
-let totalItems = computed(() => data.value.data.pagination.total);
+const fetchTodos = async () => {
+  loader.value = true;
+  const endpoint = `/api/todos?page=${pagination.value.page}&limit=${pagination.value.limit}`;
+  const { data: result, error: fetchError } = await fetchtodo(endpoint);
+  loader.value = false;
 
-// Computed property for sorted todos
-const sortedTodos = computed(() =>
-  [...(data.value.data.todos || [])].sort(
+  if (fetchError) {
+    error.value = fetchError;
+    return;
+  }
+
+  // Update `data` correctly based on the current view
+  if (pagination.value.page === 1 || !isGridView.value) {
+    data.value = result; // Replace data on the first page or in table view
+  } else {
+    // Append new todos in grid view
+    data.value = {
+      ...data.value,
+      data: {
+        ...data.value.data,
+        todos: [...(data.value?.data?.todos || []), ...result.data.todos],
+        pagination: result.data.pagination, // Ensure pagination is updated
+      },
+    };
+  }
+};
+
+
+const hasMoreItems = computed(() => {
+  return data?.value?.data?.pagination?.hasMore || false;
+});
+
+const totalItems = computed(() => data.value?.data?.pagination?.total || 0);
+
+const sortedTodos = computed(() => {
+  return (data.value?.data?.todos || []).sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  )
-);
+  );
+});
 
-// Handle delete action
 const handleDelete = (deletedTodo) => {
   data.value.data = data.value.data.filter(
     (todo) => todo.id !== deletedTodo.id
   );
+  fetchTodos();
 };
-
-// Handle status toggle (mark as complete or incomplete)
 const toggleStatus = async (todo) => {
-  loadingToggleStatus.value[todo.id] = true; // Start loader for this todo
+  loadingToggleStatus.value[todo.id] = true;
   try {
     const response = await fetch(`/api/todos/${todo.id}`, {
       method: "PUT",
@@ -148,12 +185,12 @@ const toggleStatus = async (todo) => {
       body: JSON.stringify({ status: !todo.status }),
     });
     if (!response.ok) throw new Error("Failed to update status");
-    todo.status = !todo.status; // Update local status
-    loadItems(); // Reload todos
+    todo.status = !todo.status;
+    fetchTodos();
   } catch (err) {
     alert(err.message);
   } finally {
-    loadingToggleStatus.value[todo.id] = false; // Stop loader
+    loadingToggleStatus.value[todo.id] = false;
   }
 };
 
@@ -162,28 +199,17 @@ const toggleView = () => {
   isGridView.value = !isGridView.value;
 };
 
-// Load items from the backend (this will be triggered by the data table's options update)
-const loadItems = async (options = {}) => {
-  loader.value = true; // Show loader while fetching data
-
-  // Merge current pagination with options (if available)
-  const page = options.page || pagination.value.page;
-  const limit = options.itemsPerPage || pagination.value.limit;
-
-  try {
-    // Make the request with pagination parameters
-    const response = await fetch(`/api/todos?page=${page}&limit=${limit}`);
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.message || "Failed to fetch todos");
-
-    // Update the pagination and todos data
-    pagination.value = { page, limit }; // Update pagination state
-    data.value = result; // Assuming the backend response structure has a `data` field with pagination and todos
-  } catch (err) {
-    error.value = err; // Set the error state to display the error alert
-    console.error(err.message);
-  } finally {
-    loader.value = false; // Hide loader after the request completes
-  }
+// Load items based on pagination and options
+const loadItems = async () => {
+  pagination.value.page = pagination.value.page || 1;
+  await fetchTodos(); 
 };
+const loadmoreItems = async () => {
+  if (!hasMoreItems.value) return;
+  pagination.value.page += 1; 
+  await fetchTodos(); 
+};
+
+// Initial data fetch when component is created
+fetchTodos();
 </script>
