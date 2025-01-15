@@ -20,7 +20,7 @@ export default defineNuxtConfig({
       // @ts-expect-error
       config.plugins.push(vuetify({ autoImport: true }))
     })
-  },"@nuxtjs/supabase"],
+  },"@nuxtjs/supabase",'@pinia/nuxt'],
   supabase: {
     redirectOptions:{
       login: "/login",

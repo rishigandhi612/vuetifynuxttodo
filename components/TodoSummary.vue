@@ -50,12 +50,11 @@ const totalTasks = computed(() => data?.data?.pagination?.total);
 
 // Compute percentage of completed tasks
 const completedPercentage = computed(() =>
-data?.data?.completedTodos
+(data?.data?.completedTodos/data?.data?.pagination?.total)*100
 );
 
 // Watch for changes in `data` and update counters
 watchEffect(() => {
-  const todos = data?.value?.data?.todos || [];
   completedTodos.value =data?.data?.completedTodos;
   remainingTodos.value = data?.data?.pendingTodos;
 });
