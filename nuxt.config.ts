@@ -20,7 +20,7 @@ export default defineNuxtConfig({
       // @ts-expect-error
       config.plugins.push(vuetify({ autoImport: true }))
     })
-  },"@nuxtjs/supabase",'@pinia/nuxt'],
+  },"@nuxtjs/supabase",],
   supabase: {
     redirectOptions:{
       login: "/login",
@@ -30,6 +30,7 @@ export default defineNuxtConfig({
       cookieRedirect: false,
     }
   },
+
   vite: {
     vue: {
       template: {

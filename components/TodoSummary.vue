@@ -1,5 +1,6 @@
 <template>
   <v-row>
+    <!-- Total Tasks Display -->
     <v-col cols="6" md="6" class="d-flex justify-start pa-4">
       <h1 class="text-success">
         <span>Total Tasks:</span>
@@ -11,6 +12,7 @@
       </h1>
     </v-col>
 
+    <!-- Completed and Remaining Tasks -->
     <v-col cols="6" class="d-flex justify-center">
       <v-row class="d-flex align-center">
         <v-col cols="8" class="d-flex justify-center">
@@ -25,7 +27,7 @@
         </v-col>
         <v-col cols="4">
           <v-progress-circular
-            v-model="completedPercentage"
+            :value="completedPercentage"
             color="success"
             class="me-2"
             x-large
@@ -38,24 +40,23 @@
 
 <script setup>
 import { ref, computed, watchEffect } from "vue";
+import { useMyApiStore } from "../stores/myApiStore";
 
-const { data } = await fetchtodo();
+const myApiStore = useMyApiStore();
 
-// Reactive counters
-const completedTodos = ref(0);
-const remainingTodos = ref(0);
+// Computed properties for total, completed, and remaining tasks
+const totalTasks = computed(() => myApiStore.totalTodos || 0);
+const completedTodos = computed(() => myApiStore.completedTodos || 0);
+const remainingTodos = computed(() => totalTasks.value - completedTodos.value);
 
-// Compute total tasks
-const totalTasks = computed(() => data?.data?.pagination?.total);
+// Compute the percentage of completed tasks
+const completedPercentage = computed(() => {
+  if (totalTasks.value === 0) return 0;
+  return (completedTodos.value / totalTasks.value) * 100;
+});
 
-// Compute percentage of completed tasks
-const completedPercentage = computed(() =>
-(data?.data?.completedTodos/data?.data?.pagination?.total)*100
-);
-
-// Watch for changes in `data` and update counters
+// Fetch tasks when the component is mounted
 watchEffect(() => {
-  completedTodos.value =data?.data?.completedTodos;
-  remainingTodos.value = data?.data?.pendingTodos;
+  myApiStore.fetchTodos();
 });
 </script>

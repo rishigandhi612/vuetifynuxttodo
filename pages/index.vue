@@ -4,12 +4,12 @@
     <v-row class="header" align="center">
       <!-- Centered Title -->
       <v-col cols="9" md="10" class="d-flex justify-center">
-        <p>
+        <h1>
           <span class="text-primary">
-            Hello <strong>{{ user.email }}</strong>
-            <h1>Welcome to Todo App!</h1>
+            Hello <strong>{{ user?.email }}</strong>
           </span>
-        </p>
+          <p>Welcome to Todo App!</p>
+        </h1>
       </v-col>
 
       <!-- Right-aligned Logout Button -->
@@ -21,36 +21,13 @@
     </v-row>
 
     <!-- Form to add a new todo -->
-    <v-form @submit.prevent="addTodo" class="todo-form mt-4">
-      <v-row>
-        <v-text-field
-          v-model="newTodo"
-          label="What are you working on?"
-          variant="solo"
-          @keydown.enter="addTodo"
-        >
-          <template v-slot:append-inner>
-            <v-fade-transition>
-              <v-btn
-                v-show="newTodo"
-                icon="mdi-plus-circle"
-                variant="text"
-                :loading="loadingAddTodo"
-                @click="addTodo"
-              ></v-btn>
-            </v-fade-transition>
-          </template>
-        </v-text-field>
-      </v-row>
-    </v-form>
-    
+    <AddTodo @todoAdded="fetchTodos" />
+
     <!-- Todo Summary -->
-    <TodoSummary /> 
-    <!-- Todo Summary -->
- 
+    <TodoSummary />
+
     <!-- Todo List -->
     <TodoList />
-    <!-- Todo List -->
 
     <!-- Snackbar -->
     <AppSnackbar />
@@ -60,49 +37,18 @@
 <script setup>
 import { ref } from "vue";
 
-const {
-  snackBarMessage,
-  snackBarStatus,
-  snackBarcolor,
-  ShowSnackbar,
-  HideSnackbar,
-} = useSnackBar();
+import { useMyApiStore } from "@/stores/myApiStore";
 
+// Initialize Supabase and Router
 const supabase = useSupabaseClient();
 const user = useSupabaseUser();
-let loadingLogout = ref(false);
-// Reactive state variables
-const newTodo = ref("");
-let loadingAddTodo = ref(false);
+const apiStore = useMyApiStore();
 
-// Function to add a new todo
-const addTodo = async () => {
-  loadingAddTodo.value = true;
-  if (!newTodo.value.trim()) {
-    alert("Please enter a todo title!");
-    loadingAddTodo.value = false;
-    return;
-  }
-  try {
-    const response = await fetch("/api/todos/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTodo.value, status: false }),
-    });
+// Loading state
+const loadingLogout = ref(false);
 
-    if (!response.ok) {
-      throw new Error("Failed to add the todo. Please try again.");
-    }
-
-    newTodo.value = ""; // Reset input
-    fetchtodo(); // Refetch todos
-    ShowSnackbar("Todo added successfully!");
-  } catch (err) {
-    alert(err.message || "An unexpected error occurred while adding the todo.");
-  } finally {
-    loadingAddTodo.value = false;
-  }
-};
+// Snackbar utilities
+const { ShowSnackbar } = useSnackBar();
 
 // Logout function
 const logout = async () => {
@@ -111,17 +57,25 @@ const logout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Sign out error:", error.message);
-      alert("An error occurred while signing out. Please try again.");
+      ShowSnackbar("An error occurred while signing out. Please try again.", "error");
     } else {
-      console.log("User signed out successfully.");
-      alert("You have been logged out successfully.");
-      navigateTo("/login");
+      ShowSnackbar("You have been logged out successfully.", "success");
+      router.push("/login");
     }
   } catch (err) {
     console.error("Unexpected error during sign out:", err.message);
-    alert("An unexpected error occurred during the sign out process.");
+    ShowSnackbar("An unexpected error occurred during the sign out process.", "error");
   } finally {
     loadingLogout.value = false;
+  }
+};
+
+// Fetch todos from the store when needed
+const fetchTodos = async () => {
+  try {
+    await apiStore.fetchTodos();
+  } catch (err) {
+    ShowSnackbar("Failed to fetch todos. Please try again.", "error");
   }
 };
 </script>

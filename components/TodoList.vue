@@ -9,6 +9,7 @@
       </v-btn>
     </v-row>
 
+    <!-- Loader -->
     <v-alert v-if="loader" type="info" text outlined>
       <v-progress-circular indeterminate></v-progress-circular> Loading...
     </v-alert>
@@ -24,9 +25,7 @@
       <v-col v-for="todo in sortedTodos" :key="todo.id" cols="12" sm="6" md="4">
         <v-card>
           <v-card-title>{{ todo.title }}</v-card-title>
-          <v-card-subtitle>{{
-            dateRef.format(todo.createdAt, "fullDateTime12h")
-          }}</v-card-subtitle>
+          <v-card-subtitle>{{ dateRef.format(todo.createdAt, "fullDateTime12h") }}</v-card-subtitle>
           <v-card-actions>
             <v-checkbox
               :disabled="loadingToggleStatus[todo.id]"
@@ -48,21 +47,17 @@
         </v-card>
       </v-col>
     </v-row>
-    <v-row v-if="isGridView && sortedTodos.length">
-      <v-btn v-if="hasMoreItems" block  @click="loadmoreItems" rounded>
-        Load More ... 
-      </v-btn>
-      <!-- <v-btn v-if="!hasMoreItems" block disabled rounded>
-        No more items to display. 
-      </v-btn> -->
 
+    <v-row v-if="isGridView && hasMoreItems">
+      <v-btn block @click="loadMoreItems" rounded>Load More...</v-btn>
     </v-row>
-    <!-- List View (v-data-table-server) -->
+
+    <!-- List View -->
     <v-data-table-server
       v-if="!isGridView && sortedTodos.length"
       :headers="tableHeaders"
       :items="sortedTodos"
-      :items-length="totalItems"
+      :items-length="totalTodos"
       @update:options="loadItems"
     >
       <template #item.status="{ item }">
@@ -91,11 +86,8 @@
         <DeleteTodoButton :todo="item" @delete="handleDelete" />
       </template>
 
-      <!-- No data slot -->
       <template #no-data>
-        <v-alert type="info" text outlined
-          >No todos yet! Add your first task.</v-alert
-        >
+        <v-alert type="info" text outlined>No todos yet! Add your first task.</v-alert>
       </template>
     </v-data-table-server>
 
@@ -107,14 +99,19 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useDate } from "vuetify";
+import { useMyApiStore } from "../stores/myApiStore";
 
-// Data and UI state
-const loader = ref(false);
+// Initialize store and references
+const myApiStore = useMyApiStore();
 const dateRef = useDate();
 const isGridView = ref(false);
-let loadingToggleStatus = ref({});
+const loader = ref(false);
+const error = ref(null);
+const loadingToggleStatus = ref({});
+const pagination = ref({ page: 1, limit: 10 });
+
 const tableHeaders = [
   { text: "Status", value: "status", align: "start", width: "10%" },
   { text: "Title", value: "title", align: "start", width: "50%" },
@@ -122,70 +119,35 @@ const tableHeaders = [
   { text: "Actions", value: "actions", align: "end", width: "10%" },
 ];
 
-const pagination = ref({
-  page: 1,
-  limit: 10,
-});
+// Computed properties
+const totalTodos = computed(() => myApiStore.totalTodos);
+const hasMoreItems = computed(() => myApiStore.todos.length < myApiStore.totalTodos);
+const sortedTodos = computed(() =>
+  myApiStore.todos.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+);
 
-const data = ref(null);
-const error = ref(null);
-
+// Methods
 const fetchTodos = async () => {
   loader.value = true;
-  const endpoint = `/api/todos?page=${pagination.value.page}&limit=${pagination.value.limit}`;
-  const { data: result, error: fetchError } = await fetchtodo(endpoint);
-  loader.value = false;
-
-  if (fetchError) {
-    error.value = fetchError;
-    return;
-  }
-
-  // Update `data` correctly based on the current view
-  if (pagination.value.page === 1 || !isGridView.value) {
-    data.value = result; // Replace data on the first page or in table view
-  } else {
-    // Append new todos in grid view
-    data.value = {
-      ...data.value,
-      data: {
-        ...data.value.data,
-        todos: [...(data.value?.data?.todos || []), ...result.data.todos],
-        pagination: result.data.pagination, // Ensure pagination is updated
-      },
-    };
+  try {
+    await myApiStore.fetchTodos();
+  } catch (err) {
+    error.value = err;
+  } finally {
+    loader.value = false;
   }
 };
 
-
-const hasMoreItems = computed(() => {
-  return data?.value?.data?.pagination?.hasMore || false;
-});
-
-const totalItems = computed(() => data.value?.data?.pagination?.total || 0);
-
-const sortedTodos = computed(() => {
-  return (data.value?.data?.todos || []).sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
-});
-
-const handleDelete = (deletedTodo) => {
-  data.value.data = data.value.data.filter(
-    (todo) => todo.id !== deletedTodo.id
-  );
-  fetchTodos();
+const loadMoreItems = async () => {
+  if (!hasMoreItems.value) return;
+  pagination.value.page++;
+  await fetchTodos();
 };
+
 const toggleStatus = async (todo) => {
   loadingToggleStatus.value[todo.id] = true;
   try {
-    const response = await fetch(`/api/todos/${todo.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: !todo.status }),
-    });
-    if (!response.ok) throw new Error("Failed to update status");
-    todo.status = !todo.status;
+    await myApiStore.toggleTodoStatus(todo.id);
     fetchTodos();
   } catch (err) {
     alert(err.message);
@@ -194,22 +156,17 @@ const toggleStatus = async (todo) => {
   }
 };
 
+const handleDelete = (deletedTodo) => {
+  myApiStore.todos = myApiStore.todos.filter((todo) => todo.id !== deletedTodo.id);
+};
+
 // Toggle between grid and list view
 const toggleView = () => {
   isGridView.value = !isGridView.value;
 };
 
-// Load items based on pagination and options
-const loadItems = async () => {
-  pagination.value.page = pagination.value.page || 1;
-  await fetchTodos(); 
-};
-const loadmoreItems = async () => {
-  if (!hasMoreItems.value) return;
-  pagination.value.page += 1; 
-  await fetchTodos(); 
-};
-
-// Initial data fetch when component is created
-fetchTodos();
+// Fetch todos when the component is mounted
+onMounted(() => {
+  fetchTodos();
+});
 </script>
