@@ -11,16 +11,28 @@ export const useMyApiStore = defineStore('myApiStore', {
     per_page: 10,
   }),
   actions: {
-    async fetchTodos() {
+    async fetchTodos({ page = this.page, limit = this.per_page } = {}) {
       try {
-        const response = await $fetch('/api/todos'); 
+        const response = await $fetch(`/api/todos?page=${page}&limit=${limit}`);
         if (response?.data?.todos) {
-          this.todos = response.data.todos;
+          if (page === 1) {
+            // Replace the todos array for the first page
+            this.todos = response.data.todos;
+          } else {
+            // Append the new todos for subsequent pages
+            this.todos = [...this.todos, ...response.data.todos];
+          }
+    
+          // Update pagination and counts
+          this.page = page;
+          this.per_page = limit;
           this.totalTodos = response.data.pagination.total;
           this.completedTodos = response.data.completedTodos;
+          this.remainingTodos = response.data.pendingTodos;
         }
       } catch (error) {
         console.error('Error fetching todos:', error);
+        throw error; // Rethrow the error to handle it in the component
       }
     },
     async addTodo(todo) {
