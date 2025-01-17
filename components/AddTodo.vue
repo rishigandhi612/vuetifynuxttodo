@@ -6,8 +6,10 @@
         v-model="newTodo"
         label="What are you working on?"
         variant="solo"
-        @keydown.enter="handleAddTodo"
+        maxlength="100" 
+        counter
         :disabled="loading"
+        @keydown.enter="handleAddTodo"
       >
         <template v-slot:append-inner>
           <!-- Add Button -->
@@ -18,6 +20,7 @@
               variant="text"
               :loading="loading"
               @click="handleAddTodo"
+              aria-label="Add todo"
             ></v-btn>
           </v-fade-transition>
         </template>
@@ -40,7 +43,9 @@ const loading = ref(false);
 
 // Function to handle adding a new todo
 const handleAddTodo = async () => {
-  if (!newTodo.value.trim()) {
+  const todoTitle = newTodo.value.trim();
+
+  if (!todoTitle) {
     ShowSnackbar("Please enter a valid todo title!", "warning");
     return;
   }
@@ -48,20 +53,20 @@ const handleAddTodo = async () => {
   loading.value = true;
 
   try {
-    // Call the store action to add a new todo
-    await apiStore.addTodo({ title: newTodo.value, status: false });
-    ShowSnackbar("Todo added successfully!", "success");
+    const addedTodo = await apiStore.addTodo({ title: todoTitle, status: false });
 
-    // Reset the input field
+    if (addedTodo) {
+      ShowSnackbar("Todo added successfully!", "success");
+    }
+
+    // Clear the input field
     newTodo.value = "";
-
-    // Optional: Emit an event if this component is a child
-    // emit("todoAdded");
   } catch (err) {
     console.error("Error adding todo:", err);
-    ShowSnackbar("Failed to add todo. Please try again.", "error");
+    ShowSnackbar(err.message || "Failed to add todo. Please try again.", "error");
   } finally {
     loading.value = false;
   }
 };
+
 </script>

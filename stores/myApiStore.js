@@ -13,7 +13,7 @@ export const useMyApiStore = defineStore('myApiStore', {
   actions: {
     async fetchTodos() {
       try {
-        const response = await $fetch('/api/todos'); // Update endpoint as needed
+        const response = await $fetch('/api/todos'); 
         if (response?.data?.todos) {
           this.todos = response.data.todos;
           this.totalTodos = response.data.pagination.total;
@@ -23,7 +23,6 @@ export const useMyApiStore = defineStore('myApiStore', {
         console.error('Error fetching todos:', error);
       }
     },
-
     async addTodo(todo) {
       try {
         const response = await fetch("/api/todos/create", {
@@ -31,21 +30,41 @@ export const useMyApiStore = defineStore('myApiStore', {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(todo),
         });
+    
         if (!response.ok) throw new Error("Failed to add todo.");
-        const newTodo = await response.json();
-        this.todos.push(newTodo); // Update the store
-        return newTodo;
+    
+        const { data, message } = await response.json();
+    
+        if (!data?.id || !data?.title) {
+          throw new Error("Invalid response from server.");
+        }
+    
+        // Add the new todo to the list and adjust counts
+        this.todos.push({
+          ...data, // Use the response directly to ensure all fields are included
+        });
+    
+        this.totalTodos++;
+        if (!data.status) {
+          this.remainingTodos++;
+        } else {
+          this.completedTodos++;
+        }
+    
+        console.log(message); // Optionally log the success message
+        return data; // Return the created todo for further processing
       } catch (err) {
         console.error("Error adding todo:", err);
         throw err;
       }
-    },
+    }
+    ,    
     async toggleTodoStatus(todoId, currentStatus) {
       try {
         const response = await $fetch(`/api/todos/${todoId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: { status: !currentStatus }, // Toggle status
+          body: { status: !currentStatus },
         });
     
         if (!response) throw new Error('Failed to toggle todo status.');

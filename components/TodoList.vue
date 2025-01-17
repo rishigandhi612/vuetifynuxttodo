@@ -139,10 +139,31 @@ const fetchTodos = async () => {
 };
 
 const loadMoreItems = async () => {
-  if (!hasMoreItems.value) return;
-  pagination.value.page++;
-  await fetchTodos();
+  if (!hasMoreItems.value) return; // Exit if no more items are available to load
+
+  loader.value = true;
+  pagination.value.page++; // Increment the page number
+
+  try {
+    // Fetch new todos for the next page
+    const response = await fetch(`/api/todos?page=${pagination.value.page}&limit=${pagination.value.limit}`);
+    const result = await response.json();
+
+    if (!response.ok) throw new Error(result.message || "Failed to fetch more todos");
+
+    // Append new items to the existing todos
+    myApiStore.todos = [...myApiStore.todos, ...result.data.todos];
+    myApiStore.totalTodos = result.data.pagination.total; // Update the total count in the store
+
+    // You can optionally update other metadata like completedTodos or remainingTodos
+  } catch (err) {
+    error.value = err; // Capture and display the error
+    console.error(err.message);
+  } finally {
+    loader.value = false; // Hide the loader once loading is complete
+  }
 };
+
 
 const toggleStatus = async (todo) => {
   loadingToggleStatus.value[todo.id] = true;
@@ -195,8 +216,4 @@ const loadItems = async (options = {}) => {
   }
 };
 
-// Fetch todos when the component is mounted
-onMounted(() => {
-  fetchTodos();
-});
 </script>
