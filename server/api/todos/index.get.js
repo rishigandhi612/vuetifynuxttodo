@@ -18,9 +18,8 @@ export default defineEventHandler(async (event) => {
     // 2. Get pagination parameters from query
     const query = getQuery(event);
     const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 10;
-    const skip = (page - 1) * limit;
-
+    let limit = Number(query.limit) || 10; // Default limit is 10
+    
     // 3. Get total count for pagination
     const total = await prisma.todo.count({
       where: {
@@ -28,7 +27,16 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    // 4. Fetch paginated todos belonging to the authenticated user
+    // 4. If limit is -1, fetch all todos, else handle pagination
+    let skip = 0;
+    if (limit === -1) {
+      limit = total; // Fetch all todos
+      skip = 0; // No skip required
+    } else {
+      skip = (page - 1) * limit; // Pagination logic
+    }
+
+    // 5. Fetch todos based on limit and pagination
     const todos = await prisma.todo.findMany({
       where: {
         uid: user.id,
@@ -43,16 +51,18 @@ export default defineEventHandler(async (event) => {
         createdAt: true,
         // uid is excluded for security
       },
-      take: limit,
-      skip: skip,
+      take: limit === -1 ? undefined : limit, // If limit is -1, don't apply the "take"
+      skip: limit === -1 ? undefined : skip, // If limit is -1, don't apply the "skip"
     });
+
+    // 6. Fetch completed todos count
     const completedTodos = await prisma.todo.count({
       where: {
         AND: [{ uid: user.id }, { status: true }],
       },
     });
 
-    // 5. Return success response with pagination metadata
+    // 7. Return success response with pagination metadata
     return {
       statusCode: 200,
       message: "Todos fetched successfully",
@@ -64,8 +74,8 @@ export default defineEventHandler(async (event) => {
           total,
           page,
           limit,
-          totalPages: Math.ceil(total / limit),
-          hasMore: skip + todos.length < total,
+          totalPages: limit === -1 ? 1 : Math.ceil(total / limit), // If limit = -1, there's only 1 page
+          hasMore: limit === -1 ? false : skip + todos.length < total, // No "hasMore" when all records are fetched
         },
       },
     };

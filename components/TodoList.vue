@@ -168,19 +168,25 @@ const toggleView = () => {
 const loadItems = async (options = {}) => {
   loader.value = true; // Show loader while fetching data
 
-  // Merge current pagination with options (if available)
-  const page = options.page || pagination.value.page;
-  const limit = options.itemsPerPage || pagination.value.limit;
+  // Use pagination values from the store instead of options
+  const page = options.page || myApiStore.page; // Default to current store page if no page in options
+  const limit = options.itemsPerPage || myApiStore.per_page; // Default to current store per_page if not provided
 
   try {
-    // Make the request with pagination parameters
+    // Make the request with pagination parameters (using the store's page and limit)
     const response = await fetch(`/api/todos?page=${page}&limit=${limit}`);
     const result = await response.json();
+
     if (!response.ok) throw new Error(result.message || "Failed to fetch todos");
 
-    // Update the pagination and todos data
-    pagination.value = { page, limit }; // Update pagination state
-    // todos.value = result; // Assuming the backend response structure has a `data` field with pagination and todos
+    // Update the pagination and todos data in the store
+    myApiStore.page = page;  // Update the page in the store
+    myApiStore.per_page = limit; // Update per_page in the store
+    myApiStore.todos = result.data.todos; // Assuming the response has a data.todos array
+    myApiStore.totalTodos = result.data.pagination.total; // Assuming the response has pagination info
+
+    // Optionally, you could also update other counts like completedTodos or remainingTodos here.
+
   } catch (err) {
     error.value = err; // Set the error state to display the error alert
     console.error(err.message);
@@ -188,6 +194,7 @@ const loadItems = async (options = {}) => {
     loader.value = false; // Hide loader after the request completes
   }
 };
+
 // Fetch todos when the component is mounted
 onMounted(() => {
   fetchTodos();

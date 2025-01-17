@@ -27,7 +27,7 @@
         </v-col>
         <v-col cols="4">
           <v-progress-circular
-            :value="completedPercentage"
+            v-model="completedPercentage"
             color="success"
             class="me-2"
             x-large
@@ -54,7 +54,7 @@ const completedPercentage = computed(() => {
   if (totalTasks.value === 0) return 0;
   return (completedTodos.value / totalTasks.value) * 100;
 });
-
+console.log(completedPercentage.value);
 // Fetch tasks when the component is mounted
 watchEffect(() => {
   myApiStore.fetchTodos();
