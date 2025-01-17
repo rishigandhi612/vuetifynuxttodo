@@ -10,7 +10,6 @@ export const useMyApiStore = defineStore('myApiStore', {
     page: 1,
     per_page: 10,
   }),
-
   actions: {
     async fetchTodos() {
       try {
@@ -43,29 +42,68 @@ export const useMyApiStore = defineStore('myApiStore', {
     },
     async toggleTodoStatus(todoId, currentStatus) {
       try {
-        const response = await fetch(`/api/todos/${todoId}`, {
+        const response = await $fetch(`/api/todos/${todoId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: !currentStatus }),
+          body: { status: !currentStatus }, // Toggle status
         });
-
-        if (!response.ok) throw new Error('Failed to toggle todo status.');
-
-        // Update the local state
-        const updatedTodo = await response.json();
+    
+        if (!response) throw new Error('Failed to toggle todo status.');
+    
+        // Find and update the task in the store
         const index = this.todos.findIndex((todo) => todo.id === todoId);
-
         if (index !== -1) {
-          this.todos[index].status = updatedTodo.status;
-          this.completedTodos = this.todos.filter(todo => todo.status).length;
-          this.remainingTodos = this.totalTodos - this.completedTodos;
+          this.todos[index].status = !currentStatus;
+    
+          // Update the counts reactively
+          if (!currentStatus) {
+            this.completedTodos += 1;
+            this.remainingTodos -= 1;
+          } else {
+            this.completedTodos -= 1;
+            this.remainingTodos += 1;
+          }
         }
-
-        return updatedTodo;
+    
+        return response;
+      } catch (error) {
+        console.error('Error toggling todo status:', error);
+        throw error;
+      }
+    },         
+    async deleteTodo(todoId) {
+      try {
+        const response = await fetch(`/api/todos/${todoId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+        });
+    
+        if (!response.ok) throw new Error('Failed to delete todo.');
+    
+        // Find the todo being deleted
+        const deletedTodo = this.todos.find(todo => todo.id === todoId);
+    
+        if (!deletedTodo) {
+          console.error(`Todo with ID ${todoId} not found in the store.`);
+          return;
+        }
+    
+        // Update the local state
+        this.todos = this.todos.filter(todo => todo.id !== todoId);
+    
+        // Adjust counts
+        this.totalTodos -= 1;
+        if (deletedTodo.status) {
+          this.completedTodos -= 1;
+        }
+        this.remainingTodos = this.totalTodos - this.completedTodos;
+    
+        console.log('Todo deleted successfully:', todoId);
       } catch (err) {
-        console.error('Error toggling todo status:', err);
+        console.error('Error deleting todo:', err);
         throw err;
       }
-    },
+    }
+    
   },
 });

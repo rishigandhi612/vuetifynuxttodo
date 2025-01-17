@@ -42,7 +42,7 @@
                 ></v-progress-circular>
               </template>
             </v-checkbox>
-            <DeleteTodoButton :todo="todo" @delete="handleDelete" />
+            <DeleteTodoButton :todo="todo" @delete="fetchTodos" />
           </v-card-actions>
         </v-card>
       </v-col>
@@ -58,7 +58,7 @@
       :headers="tableHeaders"
       :items="sortedTodos"
       :items-length="totalTodos"
-      @update:options="loadItems"
+      @update:options="loadItems"   
     >
       <template #item.status="{ item }">
         <v-checkbox
@@ -83,7 +83,7 @@
       </template>
 
       <template #item.actions="{ item }">
-        <DeleteTodoButton :todo="item" @delete="handleDelete" />
+        <DeleteTodoButton :todo="item" @delete="fetchTodos" />
       </template>
 
       <template #no-data>
@@ -146,25 +146,48 @@ const loadMoreItems = async () => {
 
 const toggleStatus = async (todo) => {
   loadingToggleStatus.value[todo.id] = true;
+
+  const newStatus = !todo.status; // Calculate the new status
+
   try {
-    await myApiStore.toggleTodoStatus(todo.id);
-    fetchTodos();
+    await myApiStore.toggleTodoStatus(todo.id, newStatus);
+    todo.status = newStatus; // Update local state after successful response
   } catch (err) {
-    alert(err.message);
+    console.error('Error updating todo status:', err);
   } finally {
     loadingToggleStatus.value[todo.id] = false;
   }
 };
 
-const handleDelete = (deletedTodo) => {
-  myApiStore.todos = myApiStore.todos.filter((todo) => todo.id !== deletedTodo.id);
-};
 
 // Toggle between grid and list view
 const toggleView = () => {
   isGridView.value = !isGridView.value;
 };
+// Load items from the backend (this will be triggered by the data table's options update)
+const loadItems = async (options = {}) => {
+  loader.value = true; // Show loader while fetching data
 
+  // Merge current pagination with options (if available)
+  const page = options.page || pagination.value.page;
+  const limit = options.itemsPerPage || pagination.value.limit;
+
+  try {
+    // Make the request with pagination parameters
+    const response = await fetch(`/api/todos?page=${page}&limit=${limit}`);
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || "Failed to fetch todos");
+
+    // Update the pagination and todos data
+    pagination.value = { page, limit }; // Update pagination state
+    // todos.value = result; // Assuming the backend response structure has a `data` field with pagination and todos
+  } catch (err) {
+    error.value = err; // Set the error state to display the error alert
+    console.error(err.message);
+  } finally {
+    loader.value = false; // Hide loader after the request completes
+  }
+};
 // Fetch todos when the component is mounted
 onMounted(() => {
   fetchTodos();
