@@ -9,18 +9,18 @@ export const useMyApiStore = defineStore('myApiStore', {
     totalTodos: 0,
     page: 1,
     per_page: 10,
+    isGridView: true,
   }),
   actions: {
-    async fetchTodos({ page = this.page, limit = this.per_page } = {}) {
+    async fetchTodos({ page = this.page, limit = this.per_page, append = false } = {}) {
       try {
         const response = await $fetch(`/api/todos?page=${page}&limit=${limit}`);
         if (response?.data?.todos) {
-          if (page === 1) {
-            // Replace the todos array for the first page
-            this.todos = response.data.todos;
-          } else {
-            // Append the new todos for subsequent pages
+          // Append or replace todos
+          if (append) {
             this.todos = [...this.todos, ...response.data.todos];
+          } else {
+            this.todos = response.data.todos;
           }
     
           // Update pagination and counts
@@ -32,7 +32,7 @@ export const useMyApiStore = defineStore('myApiStore', {
         }
       } catch (error) {
         console.error('Error fetching todos:', error);
-        throw error; // Rethrow the error to handle it in the component
+        throw error;
       }
     },
     async addTodo(todo) {
@@ -69,8 +69,7 @@ export const useMyApiStore = defineStore('myApiStore', {
         console.error("Error adding todo:", err);
         throw err;
       }
-    }
-    ,    
+    },    
     async toggleTodoStatus(todoId, currentStatus) {
       try {
         const response = await $fetch(`/api/todos/${todoId}`, {
@@ -134,7 +133,10 @@ export const useMyApiStore = defineStore('myApiStore', {
         console.error('Error deleting todo:', err);
         throw err;
       }
-    }
+    },
+    toggleView() {
+      this.isGridView = !this.isGridView; 
+    },
     
   },
 });

@@ -1,14 +1,5 @@
 <template>
   <v-container>
-    <!-- Icon Buttons for Grid/List View Toggle -->
-    <v-row justify="end">
-      <v-btn icon @click="toggleView" elevation="0">
-        <v-icon>{{
-          isGridView ? "mdi-format-list-checkbox" : "mdi-grid"
-        }}</v-icon>
-      </v-btn>
-    </v-row>
-
     <!-- Loader -->
     <v-alert v-if="loader" type="info" text outlined>
       <v-progress-circular indeterminate></v-progress-circular> Loading...
@@ -21,11 +12,13 @@
     </v-alert>
 
     <!-- Grid View -->
-    <v-row v-if="isGridView && sortedTodos.length">
+    <v-row v-if="myApiStore.isGridView && sortedTodos.length">
       <v-col v-for="todo in sortedTodos" :key="todo.id" cols="12" sm="6" md="4">
         <v-card>
           <v-card-title>{{ todo.title }}</v-card-title>
-          <v-card-subtitle>{{ dateRef.format(todo.createdAt, "fullDateTime12h") }}</v-card-subtitle>
+          <v-card-subtitle>{{
+            dateRef.format(todo.createdAt, "fullDateTime12h")
+          }}</v-card-subtitle>
           <v-card-actions>
             <v-checkbox
               :disabled="loadingToggleStatus[todo.id]"
@@ -48,17 +41,17 @@
       </v-col>
     </v-row>
 
-    <v-row v-if="isGridView && hasMoreItems">
+    <v-row v-if="myApiStore.isGridView && hasMoreItems">
       <v-btn block @click="loadMoreItems" rounded>Load More...</v-btn>
     </v-row>
 
     <!-- List View -->
     <v-data-table-server
-      v-if="!isGridView && sortedTodos.length"
+      v-if="!myApiStore.isGridView && sortedTodos.length"
       :headers="tableHeaders"
       :items="sortedTodos"
       :items-length="totalTodos"
-      @update:options="loadItems"   
+      @update:options="loadItems"
     >
       <template #item.status="{ item }">
         <v-checkbox
@@ -87,7 +80,9 @@
       </template>
 
       <template #no-data>
-        <v-alert type="info" text outlined>No todos yet! Add your first task.</v-alert>
+        <v-alert type="info" text outlined
+          >No todos yet! Add your first task.</v-alert
+        >
       </template>
     </v-data-table-server>
 
@@ -106,7 +101,6 @@ import { useMyApiStore } from "../stores/myApiStore";
 // Initialize store and references
 const myApiStore = useMyApiStore();
 const dateRef = useDate();
-const isGridView = ref(false);
 const loader = ref(false);
 const error = ref(null);
 const loadingToggleStatus = ref({});
@@ -121,9 +115,14 @@ const tableHeaders = [
 
 // Computed properties
 const totalTodos = computed(() => myApiStore.totalTodos);
-const hasMoreItems = computed(() => myApiStore.todos.length < myApiStore.totalTodos);
+const hasMoreItems = computed(
+  () => myApiStore.todos.length < myApiStore.totalTodos
+);
+console.log( myApiStore.todos.length ,myApiStore.totalTodos )
 const sortedTodos = computed(() =>
-  myApiStore.todos.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  myApiStore.todos
+    .slice()
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 );
 
 // Methods
@@ -139,7 +138,7 @@ const fetchTodos = async () => {
 };
 
 const loadMoreItems = async () => {
-  if (!hasMoreItems.value) return; // Exit if no more items are available to load
+  if (!hasMoreItems.value) return; // Prevent loading if no more items are available
 
   loader.value = true;
   pagination.value.page++; // Increment the page number
@@ -163,8 +162,6 @@ const loadMoreItems = async () => {
     loader.value = false; // Hide the loader once loading is complete
   }
 };
-
-
 const toggleStatus = async (todo) => {
   loadingToggleStatus.value[todo.id] = true;
 
@@ -174,35 +171,26 @@ const toggleStatus = async (todo) => {
     await myApiStore.toggleTodoStatus(todo.id, newStatus);
     todo.status = newStatus; // Update local state after successful response
   } catch (err) {
-    console.error('Error updating todo status:', err);
+    console.error("Error updating todo status:", err);
   } finally {
     loadingToggleStatus.value[todo.id] = false;
   }
 };
 
-
-// Toggle between grid and list view
-const toggleView = () => {
-  isGridView.value = !isGridView.value;
-};
 // Load items from the backend (this will be triggered by the data table's options update)
 const loadItems = async (options = {}) => {
-  loader.value = true; // Show loader during data fetch
+  loader.value = true;
 
-  // Extract page and limit values from options or use defaults
   const page = options.page || myApiStore.page;
   const limit = options.itemsPerPage || myApiStore.per_page;
 
   try {
-    // Use the store's `fetchTodos` method with the current pagination settings
-    await myApiStore.fetchTodos({ page, limit });
+    await myApiStore.fetchTodos({ page, limit, append: false }); // Replace todos
   } catch (err) {
-    error.value = err; // Capture the error
-    console.error('Error in loadItems:', err.message);
+    error.value = err;
+    console.error("Error in loadItems:", err.message);
   } finally {
-    loader.value = false; // Hide loader after fetch
+    loader.value = false;
   }
 };
-
-
 </script>

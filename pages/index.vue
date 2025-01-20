@@ -1,18 +1,20 @@
-
 <template>
-  <v-container class="todo-app mt-4">
-    <HeaderComponent />
+  <v-app>
+    <v-container >
+      <HeaderComponent />
 
-    <!-- Form to add a new todo -->
-    <AddTodo />
+      <!-- Form to add a new todo -->
+      <v-divider class="my-10"></v-divider>
+      <AddTodo />
 
-    <!-- Todo Summary -->
-    <TodoSummary />
+      <!-- Todo Summary -->
+      <TodoSummary />
 
-    <!-- Todo List -->
-    <TodoList />
+      <!-- Todo List -->
+      <TodoList />
 
-    <!-- Snackbar -->
-    <AppSnackbar />
-  </v-container>
+      <!-- Snackbar -->
+      <AppSnackbar />
+    </v-container>
+  </v-app>
 </template>
