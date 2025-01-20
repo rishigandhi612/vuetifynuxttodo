@@ -11,12 +11,10 @@
       <v-btn text color="primary" @click="fetchTodos">Retry</v-btn>
     </v-alert>
 
-    
     <!-- Grid View -->
     <v-row v-if="myApiStore.isGridView && sortedTodos.length">
       <v-col v-for="todo in sortedTodos" :key="todo.id" cols="12" sm="6" md="4">
-        <v-card   :disabled="loader"
-        > 
+        <v-card :disabled="loader">
           <v-card-title>{{ todo.title }}</v-card-title>
           <v-card-subtitle>{{
             dateRef.format(todo.createdAt, "fullDateTime12h")
@@ -81,18 +79,15 @@
       <template #item.actions="{ item }">
         <DeleteTodoButton :todo="item" @delete="fetchTodos" />
       </template>
-
-      <template #no-data>
-        <v-alert type="info" text outlined
-          >No todos yet! Add your first task.</v-alert
-        >
-      </template>
     </v-data-table-server>
 
     <!-- Empty State -->
-    <v-alert v-if="!sortedTodos.length" type="info" text outlined>
+     <v-main v-if="!loader">
+      <v-alert v-if="!sortedTodos.length" type="info" text outlined>
       No todos yet! Add your first task.
     </v-alert>
+     </v-main>
+    
   </v-container>
 </template>
 
@@ -121,7 +116,7 @@ const totalTodos = computed(() => myApiStore.totalTodos);
 const hasMoreItems = computed(
   () => myApiStore.todos.length < myApiStore.totalTodos
 );
-console.log( myApiStore.todos.length ,myApiStore.totalTodos )
+console.log(myApiStore.todos.length, myApiStore.totalTodos);
 const sortedTodos = computed(() =>
   myApiStore.todos
     .slice()
@@ -148,10 +143,13 @@ const loadMoreItems = async () => {
 
   try {
     // Fetch new todos for the next page
-    const response = await fetch(`/api/todos?page=${pagination.value.page}&limit=${pagination.value.limit}`);
+    const response = await fetch(
+      `/api/todos?page=${pagination.value.page}&limit=${pagination.value.limit}`
+    );
     const result = await response.json();
 
-    if (!response.ok) throw new Error(result.message || "Failed to fetch more todos");
+    if (!response.ok)
+      throw new Error(result.message || "Failed to fetch more todos");
 
     // Append new items to the existing todos
     myApiStore.todos = [...myApiStore.todos, ...result.data.todos];

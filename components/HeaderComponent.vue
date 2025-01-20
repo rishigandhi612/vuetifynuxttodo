@@ -5,59 +5,108 @@
       <span class="text-h5">Todo</span>
     </v-toolbar-title>
 
-    <!-- Spacer -->
     <v-spacer></v-spacer>
 
-    <!-- Refresh Button -->
-    <v-btn icon @click="refreshTodos" :loading="loadingRefresh">
-      <v-icon>mdi-refresh</v-icon>
-    </v-btn>
+    <!-- Refresh Button with Tooltip -->
+    <v-tooltip bottom>
+      <template v-slot:activator="{ props }">
+        <v-btn 
+          icon 
+          v-bind="props"
+          @click="refreshTodos" 
+          :loading="loadingRefresh"
+        >
+          <v-icon>mdi-refresh</v-icon>
+        </v-btn>
+      </template>
+      <span>Refresh todos</span>
+    </v-tooltip>
 
-    <!-- View Toggle Button -->
-    <v-btn icon @click="myApiStore.toggleView">
-      <v-icon>{{ myApiStore.isGridView ? 'mdi-format-list-checkbox' : 'mdi-grid' }}</v-icon>
-    </v-btn>
+    <!-- View Toggle Button with Tooltip -->
+    <v-tooltip bottom>
+      <template v-slot:activator="{ props }">
+        <v-btn 
+          icon 
+          v-bind="props"
+          @click="myApiStore.toggleView"
+        >
+          <v-icon>{{ myApiStore.isGridView ? 'mdi-format-list-checkbox' : 'mdi-grid' }}</v-icon>
+        </v-btn>
+      </template>
+      <span>Switch to {{ myApiStore.isGridView ? 'list' : 'grid' }} view</span>
+    </v-tooltip>
 
-    <!-- Theme Toggle Button -->
-    <v-btn icon @click="toggleTheme">
-      <v-icon>{{ isDarkMode ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent' }}</v-icon>
-    </v-btn>
+    <!-- Theme Toggle Button with Tooltip -->
+    <v-tooltip bottom>
+      <template v-slot:activator="{ props }">
+        <v-btn 
+          icon 
+          v-bind="props"
+          @click="toggleTheme"
+        >
+          <v-icon>{{ isDarkMode ? 'mdi-white-balance-sunny' : 'mdi-moon-waning-crescent' }}</v-icon>
+        </v-btn>
+      </template>
+      <span>Switch to {{ isDarkMode ? 'light' : 'dark' }} mode</span>
+    </v-tooltip>
 
-    <!-- User Avatar -->
-    <v-avatar @click="showDialog = true" class="cursor-pointer" size="36">
-      <v-icon icon="mdi-account-circle"></v-icon>
-    </v-avatar>
-
-    <!-- Logout Dialog -->
-    <v-dialog v-model="showDialog" max-width="300">
-      <v-card>
-        <v-card-text class="text-h6">
-          {{ user?.email }}
-
-          <v-btn :loading="loadingLogout" color="error" block outlined @click="logout">
-            Logout
-          </v-btn>
-        </v-card-text>
-        <v-card-actions>
-          <v-btn text block @click="showDialog = false">Close</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- User Menu with Tooltip -->
+    <v-tooltip bottom>
+      <template v-slot:activator="{ props }">
+        <v-menu location="bottom end">
+          <template v-slot:activator="{ props: menuProps }">
+            <v-avatar 
+              v-bind="{ ...props, ...menuProps }"
+              class="cursor-pointer ml-2" 
+              size="36"
+            >
+              <v-icon icon="mdi-account-circle"></v-icon>
+            </v-avatar>
+          </template>
+          
+          <v-list>
+            <v-list-item>
+              <v-list-item-title class="text-body-2">
+                {{ user?.email }}
+              </v-list-item-title>
+            </v-list-item>
+            
+            <v-divider></v-divider>
+            
+            <v-list-item @click="logout" :disabled="loadingLogout">
+              <v-btn :loading="loadingLogout" color="error" block outlined @click="logout">
+                <template v-slot:prepend>
+               
+                <v-icon 
+                  :icon="loadingLogout ? 'mdi-loading' : 'mdi-logout'" 
+                  :class="{ 'rotating': loadingLogout }"
+                ></v-icon>
+              </template>
+              <v-list-item-title>Logout</v-list-item-title>
+            </v-btn>
+            </v-list-item>
+  
+          </v-list>
+        </v-menu>
+      </template>
+      <span>Account menu</span>
+    </v-tooltip>
   </v-app-bar>
 </template>
 
 <script setup>
 import { ref, defineProps, defineEmits } from 'vue';
-import { useMyApiStore } from "../stores/myApiStore"; // Import the store
+import { useMyApiStore } from "../stores/myApiStore";
+const supabase = useSupabaseClient();
 
+
+const user = useSupabaseUser();
 const props = defineProps({
   isDarkMode: Boolean
 });
 const emit = defineEmits(['toggle-theme']);
 
-const myApiStore = useMyApiStore(); // Use the store
-
-const showDialog = ref(false);
+const myApiStore = useMyApiStore();
 const loadingLogout = ref(false);
 const loadingRefresh = ref(false);
 
@@ -72,6 +121,11 @@ const refreshTodos = async () => {
   }
 };
 
+const logout = async () => {
+  const { error } = await supabase.auth.signOut()
+  navigateTo('/login')
+}
+
 const toggleTheme = () => {
   emit('toggle-theme');
 };
@@ -80,5 +134,14 @@ const toggleTheme = () => {
 <style scoped>
 .cursor-pointer {
   cursor: pointer;
+}
+
+.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>
