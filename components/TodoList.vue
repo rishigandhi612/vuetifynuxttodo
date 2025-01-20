@@ -11,10 +11,12 @@
       <v-btn text color="primary" @click="fetchTodos">Retry</v-btn>
     </v-alert>
 
+    
     <!-- Grid View -->
     <v-row v-if="myApiStore.isGridView && sortedTodos.length">
       <v-col v-for="todo in sortedTodos" :key="todo.id" cols="12" sm="6" md="4">
-        <v-card>
+        <v-card   :disabled="loader"
+        > 
           <v-card-title>{{ todo.title }}</v-card-title>
           <v-card-subtitle>{{
             dateRef.format(todo.createdAt, "fullDateTime12h")
@@ -51,6 +53,7 @@
       :headers="tableHeaders"
       :items="sortedTodos"
       :items-length="totalTodos"
+      :loading="loader"
       @update:options="loadItems"
     >
       <template #item.status="{ item }">
