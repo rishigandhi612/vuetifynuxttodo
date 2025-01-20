@@ -1,13 +1,12 @@
 <template>
   <v-app-bar color="success">
-    <!-- Application Name -->
     <v-toolbar-title>
       <span class="text-h5">Todo</span>
     </v-toolbar-title>
 
     <v-spacer></v-spacer>
 
-    <!-- Refresh Button with Tooltip -->
+
     <v-tooltip bottom>
       <template v-slot:activator="{ props }">
         <v-btn 
@@ -22,7 +21,6 @@
       <span>Refresh todos</span>
     </v-tooltip>
 
-    <!-- View Toggle Button with Tooltip -->
     <v-tooltip bottom>
       <template v-slot:activator="{ props }">
         <v-btn 
@@ -36,7 +34,6 @@
       <span>Switch to {{ myApiStore.isGridView ? 'list' : 'grid' }} view</span>
     </v-tooltip>
 
-    <!-- Theme Toggle Button with Tooltip -->
     <v-tooltip bottom>
       <template v-slot:activator="{ props }">
         <v-btn 
@@ -50,14 +47,13 @@
       <span>Switch to {{ isDarkMode ? 'light' : 'dark' }} mode</span>
     </v-tooltip>
 
-    <!-- User Menu with Tooltip -->
     <v-tooltip bottom>
       <template v-slot:activator="{ props }">
         <v-menu location="bottom end">
           <template v-slot:activator="{ props: menuProps }">
             <v-avatar 
               v-bind="{ ...props, ...menuProps }"
-              class="cursor-pointer ml-2" 
+              class="cursor-pointer" 
               size="36"
             >
               <v-icon icon="mdi-account-circle"></v-icon>

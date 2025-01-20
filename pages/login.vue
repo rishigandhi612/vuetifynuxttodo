@@ -19,17 +19,24 @@
 
             <v-text-field
               id="password"
-              type="password"
+              :type="showPassword ? 'text' : 'password'" 
               v-model="password"
               required
               label="Enter your password"
               class="mb-4"
-            />
+            >
+              <!-- Eye icon for password visibility toggle -->
+              <template v-slot:append>
+                <v-icon @click="showPassword = !showPassword">
+                  {{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }} <!-- Change icon based on visibility -->
+                </v-icon>
+              </template>
+            </v-text-field>
 
             <v-btn
               :disabled="loading || !formValid"
               type="submit"
-              color="primary"
+              color="success"
               block
             >
               {{ loading ? "Logging in..." : "Login" }}
@@ -58,9 +65,6 @@
     </v-row>
 
     <!-- Snackbar for success -->
-    <!-- <v-snackbar v-model="snackbarVisible" top>
-      {{ snackbarMessage }}
-    </v-snackbar> -->
     <AppSnackbar/>
     <!-- Password Reset Dialog -->
     <v-dialog v-model="showResetDialog" max-width="400px">
@@ -78,7 +82,7 @@
         </v-card-text>
         <v-card-actions>
           <v-btn
-            color="primary"
+            color="success"
             :disabled="loading || !resetFormValid"
             @click="handlePasswordReset"
           >
@@ -97,7 +101,6 @@
 import { ref } from "vue";
 
 const {
-  
   snackBarMessage,
   snackBarStatus,
   snackBarcolor,
@@ -114,8 +117,9 @@ const showResetDialog = ref(false);
 const resetEmail = ref("");
 const resetFormValid = ref(false);
 
-const supabase = useSupabaseClient();
+const showPassword = ref(false); // To toggle password visibility
 
+const supabase = useSupabaseClient();
 
 const handleLogin = async () => {
   loading.value = true;
