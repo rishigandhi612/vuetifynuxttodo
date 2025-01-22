@@ -110,7 +110,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import { useDate } from "vuetify";
 import { useMyApiStore } from "../stores/myApiStore";
 
@@ -120,7 +120,7 @@ const dateRef = useDate();
 const loader = computed(() => myApiStore.loading);
 const error = ref(null);
 const loadingToggleStatus = ref({});
-const pagination = ref({ page: 1, limit: 10 });
+const pagination = ref({ page: 1, limit: 12 });
 
 const tableHeaders = [
   { title: "Status", value: "status", align: "start", width: "10%" },

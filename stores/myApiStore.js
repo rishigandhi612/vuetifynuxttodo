@@ -7,7 +7,7 @@ export const useMyApiStore = defineStore('myApiStore', {
     remainingTodos: 0,
     totalTodos: 0,
     page: 1,
-    per_page: 10,
+    per_page: 12,
     isGridView: true,
     loading: false, // For loading state
     error: null,    // For error handling
