@@ -83,7 +83,7 @@
 
     <!-- Empty State -->
      <v-main v-if="!loader">
-      <v-alert v-if="!sortedTodos.length" type="info" text outlined>
+      <v-alert v-if="!loader && !sortedTodos.length" type="info" text outlined>
       No todos yet! Add your first task.
     </v-alert>
      </v-main>
@@ -99,16 +99,16 @@ import { useMyApiStore } from "../stores/myApiStore";
 // Initialize store and references
 const myApiStore = useMyApiStore();
 const dateRef = useDate();
-const loader = ref(false);
+const loader = computed(() => myApiStore.loading);
 const error = ref(null);
 const loadingToggleStatus = ref({});
 const pagination = ref({ page: 1, limit: 10 });
 
 const tableHeaders = [
-  { text: "Status", value: "status", align: "start", width: "10%" },
-  { text: "Title", value: "title", align: "start", width: "50%" },
-  { text: "Created At", value: "createdAt", align: "start", width: "30%" },
-  { text: "Actions", value: "actions", align: "end", width: "10%" },
+  { title: "Status", value: "status", align: "start", width: "10%" },
+  { title: "Title", value: "title", align: "start", width: "50%" },
+  { title: "Created At", value: "createdAt", align: "start", width: "30%" },
+  { title: "Actions", value: "actions", align: "end", width: "10%" },
 ];
 
 // Computed properties

@@ -1,6 +1,10 @@
 <template>
   <v-row>
+    <v-col cols="12" class="d-flex justify-center" v-if="loading">
+      <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
+    </v-col>
     <!-- Total Tasks Display -->
+     <template v-if="!loading">
     <v-col cols="6" md="6" class="d-flex justify-start pa-4">
       <h1 class="text-success">
         <span>Total Tasks:</span>
@@ -12,7 +16,7 @@
       </h1>
     </v-col>
 
-    <!-- Completed and Remaining Tasks -->
+    <!-- Completed and remaining Tasks -->
     <v-col cols="6" class="d-flex justify-center">
       <v-row class="d-flex align-center">
         <v-col cols="8" class="d-flex justify-center">
@@ -35,14 +39,18 @@
         </v-col>
       </v-row>
     </v-col>
+  </template>
   </v-row>
 </template>
 
 <script setup>
-import { ref, computed, watchEffect } from "vue";
+import { computed, watchEffect } from "vue";
 import { useMyApiStore } from "../stores/myApiStore";
 
 const myApiStore = useMyApiStore();
+
+// Bind the loading state from the store
+const loading = computed(() => myApiStore.loading);
 
 // Computed properties for total, completed, and remaining tasks
 const totalTasks = computed(() => myApiStore.totalTodos || 0);
@@ -54,7 +62,7 @@ const completedPercentage = computed(() => {
   if (totalTasks.value === 0) return 0;
   return (completedTodos.value / totalTasks.value) * 100;
 });
-console.log(completedPercentage.value);
+
 // Fetch tasks when the component is mounted
 watchEffect(() => {
   myApiStore.fetchTodos();
