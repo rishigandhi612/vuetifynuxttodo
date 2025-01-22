@@ -12,37 +12,55 @@
     </v-alert>
 
     <!-- Grid View -->
-    <v-row v-if="myApiStore.isGridView && sortedTodos.length">
-      <v-col v-for="todo in sortedTodos" :key="todo.id" cols="12" sm="6" md="4">
-        <v-card :disabled="loader">
-          <v-card-title>{{ todo.title }}</v-card-title>
-          <v-card-subtitle>{{
-            dateRef.format(todo.createdAt, "fullDateTime12h")
-          }}</v-card-subtitle>
-          <v-card-actions>
+  
+  <v-row v-if="myApiStore.isGridView && sortedTodos.length" class="sticky-notes-container">
+    <v-col
+      v-for="todo in sortedTodos"
+      :key="todo.id"
+      cols="12"
+      sm="6"
+      md="3"
+      class="sticky-note"
+    >
+      <v-card :disabled="loader" class="pa-4 sticky-note-card">
+        <v-row>
+          <v-col md="1" cols="1" sm="1">
             <v-checkbox
-              :disabled="loadingToggleStatus[todo.id]"
-              v-model="todo.status"
-              @click="toggleStatus(todo)"
-              hide-details
-            >
-              <template v-slot:label>
-                <v-progress-circular
-                  v-if="loadingToggleStatus[todo.id]"
-                  indeterminate
-                  size="20"
-                  color="primary"
-                ></v-progress-circular>
-              </template>
-            </v-checkbox>
-            <DeleteTodoButton :todo="todo" @delete="fetchTodos" />
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
+            :disabled="loadingToggleStatus[todo.id]"
+            v-model="todo.status"
+            @click="toggleStatus(todo)"
+            hide-details
+            style="color: black;"
+          >
+            <template v-slot:label>
+              <v-progress-circular
+                v-if="loadingToggleStatus[todo.id]"
+                indeterminate
+                size="20"
+                color="primary"
+              ></v-progress-circular>
+            </template>
+          </v-checkbox>
+          </v-col>
+          <v-col md="10" sm="10" cols="10">
+            <v-card-title style="color: black;">{{ todo.title }}</v-card-title>
+          </v-col>
+        </v-row>
+   
+
+        <v-card-subtitle class="sticky-note-date">{{
+          dateRef.format(todo.createdAt, "fullDateTime12h")
+        }}</v-card-subtitle>
+        <v-card-actions>
+          <DeleteTodoButton :todo="todo" @delete="fetchTodos" />
+        </v-card-actions>
+      </v-card>
+    </v-col>
+  </v-row>
+
 
     <v-row v-if="myApiStore.isGridView && hasMoreItems">
-      <v-btn block @click="loadMoreItems" rounded>Load More...</v-btn>
+      <v-btn block @click="loadMoreItems" rounded color="success">Load More...</v-btn>
     </v-row>
 
     <!-- List View -->
@@ -195,3 +213,23 @@ const loadItems = async (options = {}) => {
   }
 };
 </script>
+<style scoped>
+.sticky-note-card {
+  background-color:#feff9c;
+  box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.2);
+  transform: rotate(calc(-5deg + 10deg * random()));
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.sticky-note-card:hover {
+  transform: scale(1.05) rotate(0);
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+.sticky-note-date {
+  color: black;
+}
+
+</style>
