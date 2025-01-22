@@ -70,6 +70,7 @@
       :items="sortedTodos"
       :items-length="totalTodos"
       :loading="loader"
+     :items-per-page=12
       @update:options="loadItems"
     >
       <template #item.status="{ item }">
