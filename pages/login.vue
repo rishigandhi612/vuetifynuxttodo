@@ -4,7 +4,7 @@
       <v-col cols="12" md="6" lg="4">
         <v-card class="pa-4" elevation="4">
           <v-card-title class="login-title">
-            <span>Login</span> 
+            <span>Login</span>
           </v-card-title>
 
           <v-form @submit.prevent="handleLogin" v-model="formValid">
@@ -19,16 +19,15 @@
 
             <v-text-field
               id="password"
-              :type="showPassword ? 'text' : 'password'" 
+              :type="showPassword ? 'text' : 'password'"
               v-model="password"
               required
               label="Enter your password"
               class="mb-4"
             >
-              <!-- Eye icon for password visibility toggle -->
               <template v-slot:append>
                 <v-icon @click="showPassword = !showPassword">
-                  {{ showPassword ? 'mdi-eye-off' : 'mdi-eye' }} <!-- Change icon based on visibility -->
+                  {{ showPassword ? "mdi-eye-off" : "mdi-eye" }}
                 </v-icon>
               </template>
             </v-text-field>
@@ -42,20 +41,32 @@
               {{ loading ? "Logging in..." : "Login" }}
             </v-btn>
 
-            <!-- Error Alert -->
+            <!-- Google OAuth Button -->
+            <v-btn
+              @click="loginWithGoogle"
+              color="red"
+              block
+              class="mt-4"
+              :disabled="loading"
+            >
+              Login with Google
+            </v-btn>
+
             <v-alert v-if="error" type="error" dismissible class="mt-4">
               {{ error }}
             </v-alert>
           </v-form>
 
-          <v-card-actions>
+          <v-card-actions class="text-center" justify="center">
             <p>
               Don't have an account?
               <NuxtLink to="/signup" class="text-primary">Sign Up</NuxtLink>
             </p>
             <p>
               Forgot Password?
-              <span class="text-primary" @click="showResetDialog = true"
+              <span
+                class="text-primary text-center"
+                @click="showResetDialog = true"
                 >Reset</span
               >
             </p>
@@ -65,7 +76,7 @@
     </v-row>
 
     <!-- Snackbar for success -->
-    <AppSnackbar/>
+    <AppSnackbar />
     <!-- Password Reset Dialog -->
     <v-dialog v-model="showResetDialog" max-width="400px">
       <v-card>
@@ -132,7 +143,6 @@ const handleLogin = async () => {
     });
 
     if (loginError) throw loginError;
-
     // Update snackbar message and show it
     else ShowSnackbar("Login successful! Redirecting...");
     // Redirect
@@ -151,7 +161,6 @@ const handlePasswordReset = async () => {
       resetEmail.value
     );
     if (resetError) throw resetError;
-
     // Call snackbar composable to show success message
     else ShowSnackbar("Password reset link sent to your email!");
 
@@ -159,6 +168,29 @@ const handlePasswordReset = async () => {
     showResetDialog.value = false;
   } catch (err) {
     error.value = err.message || "Failed to send reset link";
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Google OAuth login function
+const loginWithGoogle = async () => {
+  loading.value = true;
+  error.value = null;
+
+  try {
+    const { error: googleError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+
+    if (googleError) throw googleError;
+
+    // Success
+    ShowSnackbar("Login successful with Google!");
+    console.log("Navigating to /confirm");
+    navigateTo("/confirm"); // Redirect to the desired page after successful login
+  } catch (err) {
+    error.value = err.message || "Failed to log in with Google";
   } finally {
     loading.value = false;
   }
