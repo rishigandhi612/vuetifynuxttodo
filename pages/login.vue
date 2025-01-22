@@ -4,7 +4,7 @@
       <v-col cols="12" md="6" lg="4">
         <v-card class="pa-4" elevation="4">
           <v-card-title class="login-title">
-            <span>Login</span>
+            <p>Login</p>
           </v-card-title>
 
           <v-form @submit.prevent="handleLogin" v-model="formValid">
@@ -37,6 +37,7 @@
               type="submit"
               color="success"
               block
+              rounded
             >
               {{ loading ? "Logging in..." : "Login" }}
             </v-btn>
@@ -44,12 +45,14 @@
             <!-- Google OAuth Button -->
             <v-btn
               @click="loginWithGoogle"
-              color="red"
+              color="black"
               block
+              variant="outlined" 
               class="mt-4"
+              rounded
               :disabled="loading"
-            >
-              Login with Google
+            >  <v-icon> mdi-google</v-icon>
+              Sign in with Google
             </v-btn>
 
             <v-alert v-if="error" type="error" dismissible class="mt-4">
