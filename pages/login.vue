@@ -1,5 +1,12 @@
 <template>
   <v-container fluid style="height: 100vh">
+    <v-progress-circular
+      v-if="loading"
+      indeterminate
+      color="primary"
+      class="position-absolute"
+      style="top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;"
+    />
     <v-row justify="center" align="center" class="fill-height">
       <v-col cols="12" md="6" lg="4">
         <v-card class="pa-4" elevation="4">
