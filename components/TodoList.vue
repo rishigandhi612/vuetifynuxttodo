@@ -1,9 +1,9 @@
 <template>
   <v-container>
     <!-- Loader -->
-    <v-alert v-if="loader" type="info" text outlined>
+    <!-- <v-alert v-if="loader" type="info" text outlined>
       <v-progress-circular indeterminate></v-progress-circular> Loading...
-    </v-alert>
+    </v-alert> -->
 
     <!-- Error State -->
     <v-alert v-if="error" type="error" text outlined>
@@ -48,7 +48,7 @@
         </v-row>
    
 
-        <v-card-subtitle class="sticky-note-date">{{
+        <v-card-subtitle style="color: black;">{{
           dateRef.format(todo.createdAt, "fullDateTime12h")
         }}</v-card-subtitle>
         <v-card-actions>
@@ -100,11 +100,11 @@
     </v-data-table-server>
 
     <!-- Empty State -->
-     <v-main v-if="!loader">
+
       <v-alert v-if="!loader && !sortedTodos.length" type="info" text outlined>
       No todos yet! Add your first task.
     </v-alert>
-     </v-main>
+
     
   </v-container>
 </template>
@@ -226,10 +226,6 @@ const loadItems = async (options = {}) => {
 .sticky-note-card:hover {
   transform: scale(1.05) rotate(0);
   box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3);
-}
-
-.sticky-note-date {
-  color: black;
 }
 
 </style>
