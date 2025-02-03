@@ -135,7 +135,6 @@ const totalTodos = computed(() => myApiStore.totalTodos);
 const hasMoreItems = computed(
   () => myApiStore.todos.length < myApiStore.totalTodos
 );
-console.log(myApiStore.todos.length, myApiStore.totalTodos);
 const sortedTodos = computed(() =>
   myApiStore.todos
     .slice()

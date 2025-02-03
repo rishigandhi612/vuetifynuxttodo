@@ -1,7 +1,8 @@
 <template>
-  <v-row>
+  <v-container>
+    <v-row>
     <v-col cols="12" class="d-flex justify-center" v-if="loading">
-      <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
+      <v-progress-circular indeterminate color="primary"></v-progress-circular>
     </v-col>
     <!-- Total Tasks Display -->
      <template v-if="!loading">
@@ -40,7 +41,16 @@
       </v-row>
     </v-col>
   </template>
+  
   </v-row>
+  <v-row>
+    <v-btn @click="analyze" color="primary"> Analyze Todos </v-btn>
+    <!-- <p v-if="analysis">{{ analysis }}</p> -->
+    <MDC :value="analysis" >
+    </MDC>
+  </v-row>
+  </v-container>
+ 
 </template>
 
 <script setup>
@@ -51,7 +61,7 @@ const myApiStore = useMyApiStore();
 
 // Bind the loading state from the store
 const loading = computed(() => myApiStore.loading);
-
+const analysis = ref("");
 // Computed properties for total, completed, and remaining tasks
 const totalTasks = computed(() => myApiStore.totalTodos || 0);
 const completedTodos = computed(() => myApiStore.completedTodos || 0);
@@ -62,6 +72,12 @@ const completedPercentage = computed(() => {
   if (totalTasks.value === 0) return 0;
   return (completedTodos.value / totalTasks.value) * 100;
 });
+const analyze = async () => {
+  console.log("analyze called");
+  
+  analysis.value = await myApiStore.analyzeTodos();
+  console.log(analysis);
+};
 
 // Fetch tasks when the component is mounted
 watchEffect(() => {

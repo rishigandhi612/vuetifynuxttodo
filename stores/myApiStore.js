@@ -115,5 +115,24 @@ export const useMyApiStore = defineStore('myApiStore', {
     toggleView() {
       this.isGridView = !this.isGridView;
     },
+    async analyzeTodos() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await $fetch("/api/travel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: { todos: this.todos }, // Send stored todos
+        });
+    
+        console.log("AI Analysis:", response);
+        return response;
+      } catch (error) {
+        this.error = error.message || "Failed to analyze todos";
+        console.error(error);
+      } finally {
+        this.loading = false;
+      }
+    },    
   },
 });
